@@ -1,0 +1,69 @@
+/**
+ *
+ *	Space shooter
+ *	A WADE game engine based space shooter with parallax starfield background.
+ *
+ *	@author nrekow
+ */
+
+html, body {   
+	width: 100%; /* use full width */
+	height: 100vh; /* use full height */
+	margin: auto;
+    padding: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+	overflow: hidden;
+    z-index: -1000;
+	background: #111 radial-gradient(circle at 50% 50% , rgba(96, 0, 255, 0.25) 50%, rgba(96, 0, 255, 0.05) 100%) repeat scroll 0 0 / cover; /* nice faded radial background */
+	-webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+	-ms-touch-action: none;
+	-webkit-perspective: 800px;
+	-moz-perspective: 800px;
+	-o-perspective: 800px;
+	perspective: 800px;
+}
+
+canvas, #wade_main_div {
+	cursor: none; /* hide cursor while in canvas */
+	width: 100%; /* use full width */
+	height: 100vh; /* use full height */
+    margin: auto;
+    position: absolute;
+    padding: 0;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border: none;
+    outline: none;
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    -o-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -moz-transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    -o-transform: translate3d(0, 0, 0);
+    -ms-transform: translate3d(0, 0, 0);
+    -webkit-transform-style: preserve-3d;
+    -moz-transform-style: preserve-3d;
+    -o-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.loadingImage_class {
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+}
