@@ -7,6 +7,7 @@ A simple space shooter based on the WADE game engine.
 - Multiple enemy types with different strength
 - Basic health, score and level logic
 - Per-pixel collision logic
+- 530kb of magic ;)
 
 ## Usage
 Use your mouse to move the spaceship around and click to fire. Every 1000 points your health and level is increased. Required hit points vary from enemy to enemy. Also larger asteroids must be shot multiple times before they are destroyed. In generel the more shots required, the higher will be the reward.
