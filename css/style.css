@@ -21,9 +21,6 @@ html, body {
 
 canvas, #wade_main_div {
 	cursor: none; /* hide cursor while in canvas */
-	width: 100%; /* use full width */
-	height: 100vh; /* use full height */
-    margin: auto;
     position: absolute;
     padding: 0;
     left: 0;
@@ -32,18 +29,21 @@ canvas, #wade_main_div {
     bottom: 0;
     border: none;
     outline: none;
+
     -webkit-backface-visibility: hidden;
-    -moz-backface-visibility: hidden;
     -o-backface-visibility: hidden;
     backface-visibility: hidden;
+
+    -webkit-user-select: none;
     -moz-user-select: none;
     -khtml-user-select: none;
-    -webkit-user-select: none;
     user-select: none;
-    -moz-transform: translate3d(0, 0, 0);
+
     -webkit-transform: translate3d(0, 0, 0);
-    -o-transform: translate3d(0, 0, 0);
     -ms-transform: translate3d(0, 0, 0);
+    -o-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+
     -webkit-transform-style: preserve-3d;
     -moz-transform-style: preserve-3d;
     -o-transform-style: preserve-3d;
