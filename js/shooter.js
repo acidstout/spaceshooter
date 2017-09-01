@@ -5,22 +5,6 @@
  *
  *	@author nrekow
  *
- *	TODO:
- *		- increase speed and/or difficulty
- *		
- *	
- *	Changelog:
- *		- added health indicator
- *		- added cheat-mode
- *		- added parallax starfield background
- *		- added turbo fire (if cheat-mode is enabled)
- *		- improved score indicator and logic
- *		- added level indicator
- *		- improved collision checks (per-pixel collision)
- *		- minor performance improvements
- *		- added multiple enemy types (e.g. alien ships and asteroids)
- *		- added health to enemies and asteroids (e.g. destroy objects only if hit by multiple shots)
- *		
  */
 
 var cheat = false;
@@ -118,7 +102,9 @@ var App = function() {
 		// Load high score.
 		var shooterData = wade.retrieveLocalObject('shooterData');
 		var highScore = (shooterData && shooterData.highScore) || 0;
-
+		var gameObj = document.getElementById('game');
+		var gameBtnObj = document.getElementById('game-icons');
+		
 		// Main menu text.
 		var clickText = new TextSprite('Click or tap to start', '32pt Verdana', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
@@ -129,6 +115,10 @@ var App = function() {
 			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '12pt Verdana', 'white', 'center'), { y: 50 });
 		}
 		
+		// Show close button and default cursor while not playing.
+		gameBtnObj.style.display = 'block';
+		game.style.cursor = 'default';
+
 		wade.addSceneObject(clickToStart);
 		
 		
@@ -139,6 +129,10 @@ var App = function() {
 			wade.removeSceneObject(clickToStart);
 			wade.app.startGame();
 			wade.app.onMouseDown = 0;
+
+			// Hide close button and cursor while playing.
+			gameBtnObj.style.display = 'none';
+			game.style.cursor = 'none';
 		};
 	};
 

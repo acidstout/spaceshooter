@@ -1,4 +1,6 @@
-html, body {   
+@import url('font-awesome.min.css');
+
+html, body {
 	width: 100%; /* use full width */
 	height: 100vh; /* use full height */
 	margin: auto;
@@ -19,8 +21,7 @@ html, body {
 	perspective: 800px;
 }
 
-canvas, #wade_main_div {
-	cursor: none; /* hide cursor while in canvas */
+canvas, #game {
     position: absolute;
     padding: 0;
     left: 0;
@@ -29,21 +30,21 @@ canvas, #wade_main_div {
     bottom: 0;
     border: none;
     outline: none;
-
+    
     -webkit-backface-visibility: hidden;
     -o-backface-visibility: hidden;
     backface-visibility: hidden;
-
+    
     -webkit-user-select: none;
     -moz-user-select: none;
     -khtml-user-select: none;
     user-select: none;
-
+    
     -webkit-transform: translate3d(0, 0, 0);
     -ms-transform: translate3d(0, 0, 0);
     -o-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
-
+    
     -webkit-transform-style: preserve-3d;
     -moz-transform-style: preserve-3d;
     -o-transform-style: preserve-3d;
@@ -58,4 +59,21 @@ canvas, #wade_main_div {
     left: 0;
     right: 0;
     z-index: 2;
+}
+
+.fa {
+	color: #fff;
+	cursor: pointer;
+	font-size:24pt;
+}
+
+.game-icons {
+	position:absolute;
+	top: 0.6em;
+	right:1em;
+}
+
+.game-icons > .game-icon {
+	float:right;
+	margin-left:1em;
 }
