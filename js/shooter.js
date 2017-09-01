@@ -114,7 +114,7 @@ var App = function() {
 		clickToStart.addSprite(new TextSprite('Highscore is ' + highScore, '24pt Highspeed', 'yellow', 'center'), { y: 140 });
 		
 		if (score > 0) {
-			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '24pt Highspeed', 'white', 'center'), { y: 175 });
+			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '24pt Highspeed', 'white', 'center'), { y: 180 });
 		}
 
 		// Add logo
@@ -351,7 +351,7 @@ var App = function() {
 		var scoreIconObj = new SceneObject(scoreIconSprite, 0, wade.getScreenWidth() / 2 - 20, -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(scoreIconObj);
 
-		var scoreSprite = new TextSprite(score.toString(), '32pt Verdana', '#f88', 'right');
+		var scoreSprite = new TextSprite(score.toString(), '32pt Highspeed', '#f88', 'right');
 		scoreCounter = new SceneObject(scoreSprite, 0, wade.getScreenWidth() / 2 - 40, 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(scoreCounter);
 		
@@ -361,7 +361,7 @@ var App = function() {
 		var healthIconObj = new SceneObject(healthIconSprite, 0, -120, -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(healthIconObj);
 
-		var healthSprite = new TextSprite(playerHealth.toString(), '32pt Verdana', '#f88', 'center');
+		var healthSprite = new TextSprite(playerHealth.toString(), '32pt Highspeed', '#f88', 'center');
 		healthCounter = new SceneObject(healthSprite, 0, -40, 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(healthCounter);
 		
@@ -371,7 +371,7 @@ var App = function() {
 		var levelIconObj = new SceneObject(levelIconSprite, 0, 20 - (wade.getScreenWidth() / 2), -12 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelIconObj);
 
-		var levelSprite = new TextSprite(level, '32pt Verdana', '#f88', 'left');
+		var levelSprite = new TextSprite(level, '32pt Highspeed', '#f88', 'left');
 		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelCounter);
 
