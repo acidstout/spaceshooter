@@ -2,8 +2,12 @@
 
 @font-face {
 	font-family: 'Highspeed';
-	src: url('../fonts/Highspeed.ttf') format('truetype');
+	src: url('../fonts/highspeed.woff') format('woff'), url('../fonts/highspeed.ttf') format('truetype');
+	font-weight:normal;
+	font-style:normal;
 }
+
+
 
 html, body {
 	width: 100%; /* use full width */
