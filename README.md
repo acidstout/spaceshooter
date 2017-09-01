@@ -1,4 +1,4 @@
-# Space shooter
+# Overkill - A retro space shooter
 A simple space shooter based on the WADE game engine.
 
 ## Features

@@ -1,4 +1,5 @@
 **ToDo**
+- improve/replace in-game graphics
 - maybe increase speed and/or difficulty
 
 **Changes**
