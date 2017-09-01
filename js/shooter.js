@@ -107,6 +107,18 @@ var App = function() {
 		var gameObj = document.getElementById('game');
 		var gameBtnObj = document.getElementById('game-icons');
 		
+		// Check for highscore cookie
+		var cookieHighscoreName = 'overkill_highscore';
+		var cookieHighscore = getCookie(cookieHighscoreName);
+		
+		if (typeof(cookieHighscore) != 'undefined' && cookieHighscore != null) {
+			if (cookieHighscore > highScore) {
+				highScore = cookieHighscore;
+			}
+		}
+		// Update highscore cookie
+		setCookie(cookieHighscoreName, highScore, 365);
+		
 		// Main menu text.
 		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
