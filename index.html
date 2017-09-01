@@ -1,35 +1,24 @@
 <!DOCTYPE html>
-<!--
-
- Space shooter
- A WADE game engine based space shooter with parallax starfield background.
-
- @author nrekow
-
--->
 <html>
 	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<meta http-equiv="X-UA-Compatible" content="IE=Edge">
-		<meta name="apple-mobile-web-app-capable" content="yes">
-		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
-		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+		<meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+		<meta name="apple-mobile-web-app-capable" content="yes"/>
+		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
+		<link rel="icon" type="image/png" href="img/ship.png"/>
 		<script src="js/jquery.min.js"></script>
 		<script src="js/starscroll.min.js"></script>
-		<script src="js/wade_3.7.1.js"></script>
-		<script>
-			$(function() {
-				// Initialize parallax starfield
-				$('#starfield').html('').starscroll(16,4,25,4,5,[96,255,255],true,true,10);
-				
-				// Initialize WADE game engine
-				wade.init('js/shooter.js');
-			});
-		</script>
-		<title>Space shooter</title>
+		<script src="js/wade.min.js"></script>
+		<script src="js/init.js"></script>
+		<title>Overkill - A retro space shooter</title>
 	</head>
 	<body>
 		<div id="starfield"></div>
-		<div id="wade_main_div"></div>
+		<div id="game"></div>
+		<div id="game-icons" class="game-icons">
+			<div class="game-icon" onclick="exitFullscreen();" title="Go back"><a href="https://rekow.ch"><span class="fa fa-times"></span></a></div>
+			<div class="game-icon" onclick="toggleFullscreen(document.documentElement);" title="Toggle fullscreen"><span class="fa fa-window-restore"></span></div>
+		</div>
 	</body>
 </html>

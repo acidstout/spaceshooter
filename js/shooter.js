@@ -5,22 +5,6 @@
  *
  *	@author nrekow
  *
- *	TODO:
- *		- increase speed and/or difficulty
- *		
- *	
- *	Changelog:
- *		- added health indicator
- *		- added cheat-mode
- *		- added parallax starfield background
- *		- added turbo fire (if cheat-mode is enabled)
- *		- improved score indicator and logic
- *		- added level indicator
- *		- improved collision checks (per-pixel collision)
- *		- minor performance improvements
- *		- added multiple enemy types (e.g. alien ships and asteroids)
- *		- added health to enemies and asteroids (e.g. destroy objects only if hit by multiple shots)
- *		
  */
 
 var cheat = false;
@@ -58,6 +42,7 @@ var App = function() {
 	var level          = 1;							// initial level
 	
 	var images = {
+		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
 		boom        : '../img/animations/boom.png',
 		bullet      : '../img/bullets/bullet0.png',
@@ -90,6 +75,7 @@ var App = function() {
 	 * Load images (e.g. used as sprites etc.).
 	 */
 	this.load = function() {
+		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
 		wade.loadImage(images.bullet);
 		wade.loadImage(images.enemyBullet);
@@ -118,17 +104,26 @@ var App = function() {
 		// Load high score.
 		var shooterData = wade.retrieveLocalObject('shooterData');
 		var highScore = (shooterData && shooterData.highScore) || 0;
-
+		var gameObj = document.getElementById('game');
+		var gameBtnObj = document.getElementById('game-icons');
+		
 		// Main menu text.
-		var clickText = new TextSprite('Click or tap to start', '32pt Verdana', 'white', 'center');
+		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
 		var clickToStart = new SceneObject(clickText);
-		clickToStart.addSprite(new TextSprite('Your best score is ' + highScore, '18pt Verdana', 'yellow', 'center'), { y: 30 });
+		clickToStart.addSprite(new TextSprite('Highscore is ' + highScore, '24pt Highspeed', 'yellow', 'center'), { y: 140 });
 		
 		if (score > 0) {
-			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '12pt Verdana', 'white', 'center'), { y: 50 });
+			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '24pt Highspeed', 'white', 'center'), { y: 180 });
 		}
-		
+
+		// Add logo
+		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
+
+		// Show close button and default cursor while not playing.
+		gameBtnObj.style.display = 'block';
+		game.style.cursor = 'default';
+
 		wade.addSceneObject(clickToStart);
 		
 		
@@ -139,6 +134,10 @@ var App = function() {
 			wade.removeSceneObject(clickToStart);
 			wade.app.startGame();
 			wade.app.onMouseDown = 0;
+
+			// Hide close button and cursor while playing.
+			gameBtnObj.style.display = 'none';
+			game.style.cursor = 'none';
 		};
 	};
 
@@ -352,7 +351,7 @@ var App = function() {
 		var scoreIconObj = new SceneObject(scoreIconSprite, 0, wade.getScreenWidth() / 2 - 20, -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(scoreIconObj);
 
-		var scoreSprite = new TextSprite(score.toString(), '32pt Verdana', '#f88', 'right');
+		var scoreSprite = new TextSprite(score.toString(), '32pt Highspeed', '#f88', 'right');
 		scoreCounter = new SceneObject(scoreSprite, 0, wade.getScreenWidth() / 2 - 40, 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(scoreCounter);
 		
@@ -362,7 +361,7 @@ var App = function() {
 		var healthIconObj = new SceneObject(healthIconSprite, 0, -120, -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(healthIconObj);
 
-		var healthSprite = new TextSprite(playerHealth.toString(), '32pt Verdana', '#f88', 'center');
+		var healthSprite = new TextSprite(playerHealth.toString(), '32pt Highspeed', '#f88', 'center');
 		healthCounter = new SceneObject(healthSprite, 0, -40, 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(healthCounter);
 		
@@ -372,7 +371,7 @@ var App = function() {
 		var levelIconObj = new SceneObject(levelIconSprite, 0, 20 - (wade.getScreenWidth() / 2), -12 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelIconObj);
 
-		var levelSprite = new TextSprite(level, '32pt Verdana', '#f88', 'left');
+		var levelSprite = new TextSprite(level, '32pt Highspeed', '#f88', 'left');
 		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelCounter);
 
