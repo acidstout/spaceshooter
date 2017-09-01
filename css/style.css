@@ -1,5 +1,10 @@
 @import url('font-awesome.min.css');
 
+@font-face {
+	font-family: 'Highspeed';
+	src: url('../fonts/Highspeed.ttf') format('truetype');
+}
+
 html, body {
 	width: 100%; /* use full width */
 	height: 100vh; /* use full height */
@@ -62,7 +67,7 @@ canvas, #game {
 }
 
 .fa {
-	color: #fff;
+	color: #333;
 	cursor: pointer;
 	font-size:24pt;
 }

@@ -42,6 +42,7 @@ var App = function() {
 	var level          = 1;							// initial level
 	
 	var images = {
+		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
 		boom        : '../img/animations/boom.png',
 		bullet      : '../img/bullets/bullet0.png',
@@ -74,6 +75,7 @@ var App = function() {
 	 * Load images (e.g. used as sprites etc.).
 	 */
 	this.load = function() {
+		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
 		wade.loadImage(images.bullet);
 		wade.loadImage(images.enemyBullet);
@@ -106,15 +108,18 @@ var App = function() {
 		var gameBtnObj = document.getElementById('game-icons');
 		
 		// Main menu text.
-		var clickText = new TextSprite('Click or tap to start', '32pt Verdana', 'white', 'center');
+		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
 		var clickToStart = new SceneObject(clickText);
-		clickToStart.addSprite(new TextSprite('Your best score is ' + highScore, '18pt Verdana', 'yellow', 'center'), { y: 30 });
+		clickToStart.addSprite(new TextSprite('Highscore is ' + highScore, '24pt Highspeed', 'yellow', 'center'), { y: 140 });
 		
 		if (score > 0) {
-			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '12pt Verdana', 'white', 'center'), { y: 50 });
+			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '24pt Highspeed', 'white', 'center'), { y: 175 });
 		}
-		
+
+		// Add logo
+		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
+
 		// Show close button and default cursor while not playing.
 		gameBtnObj.style.display = 'block';
 		game.style.cursor = 'default';
