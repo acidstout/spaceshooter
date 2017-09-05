@@ -66,15 +66,18 @@ var App = function() {
 		scoreIcon   : '../img/icons/trophy.png'
 	}
 	
-	if (cheat) {
-		playerHealth = 999;
+	var sounds = {
+		shoot       : '../sounds/shoot.mp3',
+		hit         : '../sounds/hit.mp3',
+		explode     : '../sounds/explode.mp3'
 	}
-
+	
 	
 	/**
-	 * Load images (e.g. used as sprites etc.).
+	 * Load images and sounds.
 	 */
 	this.load = function() {
+		// Images
 		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
 		wade.loadImage(images.bullet);
@@ -94,6 +97,11 @@ var App = function() {
 		wade.loadImage(images.healthIcon);
 		wade.loadImage(images.levelIcon);
 		wade.loadImage(images.scoreIcon);
+		
+		// Sounds
+		wade.loadAudio(sounds.shoot);
+		wade.loadAudio(sounds.hit);
+		wade.loadAudio(sounds.explode);
 	};
 
 	
@@ -101,34 +109,70 @@ var App = function() {
 	 * Initialize game.
 	 */
 	this.init = function() {
-		// Load high score.
+		// Load highscore.
 		var shooterData = wade.retrieveLocalObject('shooterData');
-		var highScore = (shooterData && shooterData.highScore) || 0;
+		var oldHighScore = (shooterData && shooterData.oldHighScore) || 0;
+		var newHighScore = (shooterData && shooterData.newHighScore) || 0;
 		var gameObj = document.getElementById('game');
 		var gameBtnObj = document.getElementById('game-icons');
+		var highScore = oldHighScore;
 		
-		// Check for highscore cookie
+		// Check for highscore cookie.
 		var cookieHighscoreName = 'overkill_highscore';
 		var cookieHighscore = getCookie(cookieHighscoreName);
 		
 		if (typeof(cookieHighscore) != 'undefined' && cookieHighscore != null) {
-			if (cookieHighscore > highScore) {
-				highScore = cookieHighscore;
+			if (cookieHighscore > oldHighScore) {
+				oldHighScore = cookieHighscore;
 			}
 		}
-		// Update highscore cookie
-		setCookie(cookieHighscoreName, highScore, 365);
+
+		if (newHighScore > oldHighScore) {
+			highScore = newHighScore;
+		}
 		
 		// Main menu text.
 		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
 		var clickToStart = new SceneObject(clickText);
-		clickToStart.addSprite(new TextSprite('Highscore is ' + highScore, '24pt Highspeed', 'yellow', 'center'), { y: 140 });
 		
 		if (score > 0) {
-			clickToStart.addSprite(new TextSprite('Your current score is ' + score, '24pt Highspeed', 'white', 'center'), { y: 180 });
+			var scoreVerb = 'scored';
+			if (cheat) {
+				scoreVerb = 'cheated';
+			}
+
+			clickToStart.addSprite(new TextSprite('You ' + scoreVerb + ' ' + score + ' points', '24pt Highspeed', 'white', 'center'), { y: 180 });
+
+			if (newHighScore > oldHighScore) {
+				var highscoreMessage = 'New Highscore';
+				
+				if (cheat) {
+					highscoreMessage += ' not saved';
+				}
+				
+				highscoreMessage += '!';
+				
+				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
+				newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
+				clickToStart.addSprite(newHighscoreText, { y: 140 });
+			}
+		}
+		
+		if (score <= 0 || oldHighScore >= newHighScore) {
+			clickToStart.addSprite(new TextSprite('Highscore is ' + highScore + ' points', '24pt Highspeed', 'yellow', 'center'), { y: 140 });
 		}
 
+		// Store highscore only if player didn't cheat. 
+		if(!cheat) {
+			// Update highscore cookie.
+			setCookie(cookieHighscoreName, highScore, 365);
+	
+			// Update local store with highscore.
+			shooterData = { oldHighScore: highScore, newHighScore: newHighScore };
+			wade.storeLocalObject('shooterData', shooterData);
+		}
+		
 		// Add logo
 		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
 
@@ -188,7 +232,7 @@ var App = function() {
 			// Turbo fire!
 			if (wade.isMouseDown('2') && cheat) {
 				//console.log('right');
-				fireRateTemp = 60;
+				fireRateTemp = 50;
 			}
 
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
@@ -201,6 +245,7 @@ var App = function() {
 				var sprite = new Sprite(images.bullet);
 				var bullet = new SceneObject(sprite, 0, shipPosition.x, shipPosition.y - shipSize.y / 2);
 				wade.addSceneObject(bullet);
+				wade.playAudio(sounds.shoot, false);
 				activeBullets.push(bullet);
 				bullet.moveTo(shipPosition.x, -500, 600);
 				
@@ -232,17 +277,22 @@ var App = function() {
 						for (var j = 0; j < colliders.length; j++) {
 
 							if (colliders[j].isEnemy) {
-								// Create explosion.
+								// Create explosion and play hit sound.
 								var position = colliders[j].getPosition();
 								wade.app.explosion(position);
+								wade.playAudio(sounds.hit, false);
 
-								// Decrease enemy's health.
+								// Decrease health of collider (e.g. enemy, asteroid, ...).
 								if (colliders[j].health > 0) {
 									colliders[j].health -= fireDamage;
 								}
 								
 								// Check enemy's health again.
 								if (colliders[j].health <= 0) {
+									// Create another explosion and play explode sound.
+									wade.app.explosion(position);
+									wade.playAudio(sounds.explode, false);
+									
 									// Delete collider (enemy/asteroid).
 									wade.removeSceneObject(colliders[j]);
 
@@ -287,10 +337,6 @@ var App = function() {
 				}
 			}
 
-			if (cheat || playerHealth > 999) {
-				playerHealth = 999;
-			}
-
 			// Draw updated health, level and score.
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
@@ -308,14 +354,27 @@ var App = function() {
 			
 			// If the list is not empty ...
 			if (overlapping.length > 0) {
+				
 				for (var i = 0; i < overlapping.length; i++) {
+
 					// ... check if the overlapping object is either an enemy or an enemy's bullet.
 					if (overlapping[i].isEnemy || overlapping[i].isEnemyBullet) {
+						
 						// Comparing per-pixel is quite slow, but the only easy way to check for collisions while discarding transparent pixels.
 						if (ship.overlapsObject(overlapping[i], 'pixel')) {
-							// Create explosion
-							wade.app.explosion(ship.getPosition());
+							// Decrease health of overlapping object by a 10th of the default fire damage.
+							if (overlapping[i].health > 0) {
+								overlapping[i].health -= Math.floor(fireDamage / 10);
+							}
+							
+							// Remove enemy's bullet if it hit the player's ship.
+							if (overlapping[i].isEnemyBullet || overlapping[i].health <= 0) {
+								wade.removeSceneObject(overlapping[i]);
+								wade.removeObjectFromArrayByIndex(i, overlapping);
+							}
+							
 							hit = true;
+							break;
 						}
 					}
 				}
@@ -324,21 +383,29 @@ var App = function() {
 			if (hit) {
 				hit = false;
 
+				// Create explosion and play hit sound if player gets hit by a bullet.
+				wade.app.explosion(ship.getPosition());
+				wade.playAudio(sounds.hit, false);
+
 				// Decrease health.
 				playerHealth--;
 				healthCounter.getSprite().setText(playerHealth);
 				
 				// Check health.
 				if (playerHealth <= 0) {
+					// Create another explosion and play explode sound if player's health is zero or less.
+					wade.app.explosion(ship.getPosition());
+					wade.playAudio(sounds.explode, false);
 					wade.removeSceneObject(ship);
 					wade.setMainLoop(null, 'fire');
 					wade.setMainLoop(null, 'die');
 
 					// Check high score
 					var shooterData = wade.retrieveLocalObject('shooterData');
-					var highScore = (shooterData && shooterData.highScore) || 0;
+					var highScore = (shooterData && shooterData.oldHighScore) || 0;
+					
 					if (score > highScore) {
-						shooterData = { highScore: score };
+						shooterData = { oldHighScore: highScore, newHighScore: score };
 						wade.storeLocalObject('shooterData', shooterData);
 					}
 
@@ -353,7 +420,12 @@ var App = function() {
 
 		
 		// Initialize game values
-		playerHealth = 100;
+		if (cheat) {
+			playerHealth = 999;
+		} else {
+			playerHealth = 100;
+		}
+		
 		score = 0;
 		level = 1;
 
