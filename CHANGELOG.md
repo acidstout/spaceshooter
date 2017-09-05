@@ -17,3 +17,6 @@
 - added option to toggle fullscreen mode
 - added logo
 - save current highscore as cookie
+- added sounds
+- improved behaviour when getting hit
+- fixed "unable to die" issue when cheating
