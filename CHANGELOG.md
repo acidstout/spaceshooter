@@ -1,12 +1,3 @@
-**ToDo**
-- improve/replace in-game graphics
-- maybe increase speed and/or difficulty
-- maybe save highscore on server-side
-- maybe add support for mobile devices (e.g. change control method)
-
-**Known bugs**
-- sometimes the fire action gets stuck (e.g. keeps firing, although no button is pressed)
-
 **Changes**
 - added health indicator
 - added cheat-mode
