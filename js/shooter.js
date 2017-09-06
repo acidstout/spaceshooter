@@ -26,7 +26,7 @@ var App = function() {
 	var enemyDelay     = 2000;						// how long to wait from spawning one enemy to spawning the next one
 	var nextEnemy;									// the process that will spawn the next enemy
 
-	var asteroidHealth = [ 200, 200, 400, 400, 400, 600, 800 ];	// asteroid's health
+	var asteroidHealth = [ 200, 200, 200, 300, 400, 400, 600, 500, 400, 600 ];	// asteroid's health
 	var asteroidDelay  = 1000;						// how long to wait from spawning one asteroid to spawning the next one
 	var nextAsteroid;								// the process that will spawn the next asteroid
 	
@@ -48,18 +48,25 @@ var App = function() {
 		bullet      : '../img/bullets/bullet0.png',
 		enemyBullet : '../img/bullets/bullet1.png',
 		
-		enemy0      : '../img/enemies/enemy0.png',
-		enemy1      : '../img/enemies/enemy1.png',
-		enemy2      : '../img/enemies/enemy2.png',
-		enemy3      : '../img/enemies/enemy3.png',
+		enemies     : {
+			0       : '../img/enemies/enemy0.png',
+			1       : '../img/enemies/enemy1.png',
+			2       : '../img/enemies/enemy2.png',
+			3       : '../img/enemies/enemy3.png',
+		},
 		
-		asteroid0   : '../img/asteroids/asteroid0.png',
-		asteroid1   : '../img/asteroids/asteroid1.png',
-		asteroid2   : '../img/asteroids/asteroid2.png',
-		asteroid3   : '../img/asteroids/asteroid3.png',
-		asteroid4   : '../img/asteroids/asteroid4.png',
-		asteroid5   : '../img/asteroids/asteroid5.png',
-		asteroid6   : '../img/asteroids/asteroid6.png',
+		asteroids   : {
+			0       : '../img/asteroids/asteroid0.png',
+			1       : '../img/asteroids/asteroid1.png',
+			2       : '../img/asteroids/asteroid2.png',
+			3       : '../img/asteroids/asteroid3.png',
+			4       : '../img/asteroids/asteroid4.png',
+			5       : '../img/asteroids/asteroid5.png',
+			6       : '../img/asteroids/asteroid6.png',
+			7       : '../img/asteroids/asteroid7.png',
+			8       : '../img/asteroids/asteroid8.png',
+			9       : '../img/asteroids/asteroid9.png',
+		},
 		
 		healthIcon  : '../img/icons/heart.png',
 		levelIcon   : '../img/icons/star.png',
@@ -82,22 +89,23 @@ var App = function() {
 		wade.loadImage(images.ship);
 		wade.loadImage(images.bullet);
 		wade.loadImage(images.enemyBullet);
-		wade.loadImage(images.enemy0);
-		wade.loadImage(images.enemy1);
-		wade.loadImage(images.enemy2);
-		wade.loadImage(images.enemy3);
-		wade.loadImage(images.asteroid0);
-		wade.loadImage(images.asteroid1);
-		wade.loadImage(images.asteroid2);
-		wade.loadImage(images.asteroid3);
-		wade.loadImage(images.asteroid4);
-		wade.loadImage(images.asteroid5);
-		wade.loadImage(images.asteroid6);
 		wade.loadImage(images.boom);
+
+		// Top row icons
 		wade.loadImage(images.healthIcon);
 		wade.loadImage(images.levelIcon);
 		wade.loadImage(images.scoreIcon);
 		
+		// Enemies
+		for (var i = 0; i < Object.keys(images.enemies).length; i++) {
+			wade.loadImage(images.enemies[i]);
+		}
+		
+		// Asteroids
+		for (var i = 0; i < Object.keys(images.asteroids).length; i++) {
+			wade.loadImage(images.asteroids[i]);
+		}
+
 		// Sounds
 		wade.loadAudio(sounds.shoot);
 		wade.loadAudio(sounds.hit);
@@ -134,7 +142,9 @@ var App = function() {
 		// Main menu text.
 		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
-		var clickToStart = new SceneObject(clickText);
+		var clickToStart = new SceneObject();
+		
+		clickToStart.addSprite(clickText, { y: 320 });
 		
 		if (score > 0) {
 			var scoreVerb = 'scored';
@@ -142,7 +152,7 @@ var App = function() {
 				scoreVerb = 'cheated';
 			}
 
-			clickToStart.addSprite(new TextSprite('You ' + scoreVerb + ' ' + score + ' points', '24pt Highspeed', 'white', 'center'), { y: 180 });
+			clickToStart.addSprite(new TextSprite('You ' + scoreVerb + ' ' + score + ' points', '24pt Highspeed', 'white', 'center'), { y: 120 });
 
 			if (newHighScore > oldHighScore) {
 				var highscoreMessage = 'New Highscore';
@@ -154,13 +164,13 @@ var App = function() {
 				highscoreMessage += '!';
 				
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
-				newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
-				clickToStart.addSprite(newHighscoreText, { y: 140 });
+				//newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
+				clickToStart.addSprite(newHighscoreText, { y: 160 });
 			}
 		}
 		
 		if (score <= 0 || oldHighScore >= newHighScore) {
-			clickToStart.addSprite(new TextSprite('Highscore is ' + highScore + ' points', '24pt Highspeed', 'yellow', 'center'), { y: 140 });
+			clickToStart.addSprite(new TextSprite('Highscore is ' + highScore + ' points', '24pt Highspeed', 'yellow', 'center'), { y: 160 });
 		}
 
 		// Store highscore only if player didn't cheat. 
@@ -282,7 +292,7 @@ var App = function() {
 								wade.app.explosion(position);
 								wade.playAudio(sounds.hit, false);
 
-								// Decrease health of collider (e.g. enemy, asteroid, ...).
+								// Decrease health of collider (e.g. enemy, , ...).
 								if (colliders[j].health > 0) {
 									colliders[j].health -= fireDamage;
 								}
@@ -508,30 +518,8 @@ var App = function() {
 		var sprite;
 		
 		// Select random image of asteroid as sprite.
-		var asteroidId = getRandomInt(0, 6); 
-		switch (asteroidId) {
-			case 1:
-				sprite = new Sprite(images.asteroid1);
-				break;
-			case 2:
-				sprite = new Sprite(images.asteroid2);
-				break;
-			case 3:
-				sprite = new Sprite(images.asteroid3);
-				break;
-			case 4:
-				sprite = new Sprite(images.asteroid4);
-				break;
-			case 5:
-				sprite = new Sprite(images.asteroid5);
-				break;
-			case 6:
-				sprite = new Sprite(images.asteroid6);
-				break;
-			default:
-				sprite = new Sprite(images.asteroid0);
-				break;
-		}
+		var asteroidId = getRandomInt(0, 9);
+		sprite = new Sprite(images.asteroids[asteroidId]);
 		
 		// Calculate start and end coordinates.
 		var startX = (Math.random() - 0.5) * wade.getScreenWidth();
@@ -569,20 +557,7 @@ var App = function() {
 
 		// Select random image of enemy as sprite.
 		var enemyId = getRandomInt(0, 3); 
-		switch (enemyId) {
-			case 1:
-				sprite = new Sprite(images.enemy1);
-				break;
-			case 2:
-				sprite = new Sprite(images.enemy2);
-				break;
-			case 3:
-				sprite = new Sprite(images.enemy3);
-				break;
-			default:
-				sprite = new Sprite(images.enemy0);
-				break;
-		}
+		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
 		var startX = (Math.random() - 0.5) * wade.getScreenWidth();
