@@ -17,3 +17,6 @@
 - fixed "unable to die" issue when cheating
 - set space little darker
 - updated top row icons and asteroids with higher quality images
+- updated explosion and hit animations
+- fixed explosion sound issue
+- updated bullets
