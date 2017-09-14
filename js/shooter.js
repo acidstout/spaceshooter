@@ -531,9 +531,7 @@ var App = function() {
 			i = 0;
 		}
 		
-		console.log(images.boom[i].toSource());
 		// Create an animation.
-		//var animation = new Animation(images.boom, 6, 4, 30);
 		var animation = new Animation(images.boom[i].file, images.boom[i].x, images.boom[i].y, images.boom[i].speed);
 		
 		// Create a sprite of the animation.
