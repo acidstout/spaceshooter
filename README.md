@@ -13,3 +13,6 @@ Use your mouse to move the spaceship around and click to fire. Every 1000 points
 
 ## Compatibility
 The game will run flawlessly in any modern browser. Even older browsers should work pretty well, if they support simple 2d canvas feature. No WebGL support required.
+
+## Demo
+Play the game on [https://rekow.ch/overkill] for free. 
