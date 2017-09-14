@@ -1,8 +1,3 @@
-**ToDo**
-- improve/replace in-game graphics
-- maybe increase speed and/or difficulty
-- maybe save highscore on server-side
-
 **Changes**
 - added health indicator
 - added cheat-mode
@@ -20,3 +15,8 @@
 - added sounds
 - improved behaviour when getting hit
 - fixed "unable to die" issue when cheating
+- set space little darker
+- updated top row icons and asteroids with higher quality images
+- updated explosion and hit animations
+- fixed explosion sound issue
+- updated bullets

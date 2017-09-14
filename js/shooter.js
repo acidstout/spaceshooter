@@ -26,7 +26,7 @@ var App = function() {
 	var enemyDelay     = 2000;						// how long to wait from spawning one enemy to spawning the next one
 	var nextEnemy;									// the process that will spawn the next enemy
 
-	var asteroidHealth = [ 200, 200, 400, 400, 400, 600, 800 ];	// asteroid's health
+	var asteroidHealth = [ 200, 200, 200, 300, 400, 400, 600, 500, 400, 600 ];	// asteroid's health
 	var asteroidDelay  = 1000;						// how long to wait from spawning one asteroid to spawning the next one
 	var nextAsteroid;								// the process that will spawn the next asteroid
 	
@@ -44,23 +44,56 @@ var App = function() {
 	var images = {
 		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
-		boom        : '../img/animations/boom.png',
-		bullet      : '../img/bullets/bullet0.png',
-		enemyBullet : '../img/bullets/bullet1.png',
+
+		// Animated explosions (file, animation speed, number of tiles per x/y-axis)
+		boom : {
+			0 : {
+					file: '../img/animations/explode_4x4_ship.png',
+					speed: 30,
+					x: 4,
+					y: 4
+				},
+			1: {
+					file: '../img/animations/explode_4x4_ring.png',
+					speed: 30,
+					x: 4,
+					y: 4
+				},
+			2 : {
+					file: '../img/animations/explode_5x3_enemy.png',
+					speed: 30,
+					x: 5,
+					y: 3
+				}
+		},
 		
-		enemy0      : '../img/enemies/enemy0.png',
-		enemy1      : '../img/enemies/enemy1.png',
-		enemy2      : '../img/enemies/enemy2.png',
-		enemy3      : '../img/enemies/enemy3.png',
+		// Bullets
+		bullet      : '../img/bullets/bullet2.png',
+		enemyBullet : '../img/bullets/bullet3.png',
 		
-		asteroid0   : '../img/asteroids/asteroid0.png',
-		asteroid1   : '../img/asteroids/asteroid1.png',
-		asteroid2   : '../img/asteroids/asteroid2.png',
-		asteroid3   : '../img/asteroids/asteroid3.png',
-		asteroid4   : '../img/asteroids/asteroid4.png',
-		asteroid5   : '../img/asteroids/asteroid5.png',
-		asteroid6   : '../img/asteroids/asteroid6.png',
+		// Enemies
+		enemies     : {
+			0       : '../img/enemies/enemy0.png',
+			1       : '../img/enemies/enemy1.png',
+			2       : '../img/enemies/enemy2.png',
+			3       : '../img/enemies/enemy3.png'
+		},
 		
+		// Asteroids
+		asteroids   : {
+			0       : '../img/asteroids/asteroid0.png',
+			1       : '../img/asteroids/asteroid1.png',
+			2       : '../img/asteroids/asteroid2.png',
+			3       : '../img/asteroids/asteroid3.png',
+			4       : '../img/asteroids/asteroid4.png',
+			5       : '../img/asteroids/asteroid5.png',
+			6       : '../img/asteroids/asteroid6.png',
+			7       : '../img/asteroids/asteroid7.png',
+			8       : '../img/asteroids/asteroid8.png',
+			9       : '../img/asteroids/asteroid9.png'
+		},
+		
+		// Top row icons
 		healthIcon  : '../img/icons/heart.png',
 		levelIcon   : '../img/icons/star.png',
 		scoreIcon   : '../img/icons/trophy.png'
@@ -82,22 +115,28 @@ var App = function() {
 		wade.loadImage(images.ship);
 		wade.loadImage(images.bullet);
 		wade.loadImage(images.enemyBullet);
-		wade.loadImage(images.enemy0);
-		wade.loadImage(images.enemy1);
-		wade.loadImage(images.enemy2);
-		wade.loadImage(images.enemy3);
-		wade.loadImage(images.asteroid0);
-		wade.loadImage(images.asteroid1);
-		wade.loadImage(images.asteroid2);
-		wade.loadImage(images.asteroid3);
-		wade.loadImage(images.asteroid4);
-		wade.loadImage(images.asteroid5);
-		wade.loadImage(images.asteroid6);
-		wade.loadImage(images.boom);
+		
+		// Animation
+		//wade.loadImage(images.boom);
+		for (var i = 0; i < Object.keys(images.boom).length; i++) {
+			wade.loadImage(images.boom[i].file);
+		}
+
+		// Top row icons
 		wade.loadImage(images.healthIcon);
 		wade.loadImage(images.levelIcon);
 		wade.loadImage(images.scoreIcon);
 		
+		// Enemies
+		for (var i = 0; i < Object.keys(images.enemies).length; i++) {
+			wade.loadImage(images.enemies[i]);
+		}
+		
+		// Asteroids
+		for (var i = 0; i < Object.keys(images.asteroids).length; i++) {
+			wade.loadImage(images.asteroids[i]);
+		}
+
 		// Sounds
 		wade.loadAudio(sounds.shoot);
 		wade.loadAudio(sounds.hit);
@@ -134,7 +173,9 @@ var App = function() {
 		// Main menu text.
 		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
-		var clickToStart = new SceneObject(clickText);
+		var clickToStart = new SceneObject();
+		
+		clickToStart.addSprite(clickText, { y: 320 });
 		
 		if (score > 0) {
 			var scoreVerb = 'scored';
@@ -142,7 +183,7 @@ var App = function() {
 				scoreVerb = 'cheated';
 			}
 
-			clickToStart.addSprite(new TextSprite('You ' + scoreVerb + ' ' + score + ' points', '24pt Highspeed', 'white', 'center'), { y: 180 });
+			clickToStart.addSprite(new TextSprite('You ' + scoreVerb + ' ' + score + ' points', '24pt Highspeed', 'white', 'center'), { y: 120 });
 
 			if (newHighScore > oldHighScore) {
 				var highscoreMessage = 'New Highscore';
@@ -154,13 +195,13 @@ var App = function() {
 				highscoreMessage += '!';
 				
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
-				newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
-				clickToStart.addSprite(newHighscoreText, { y: 140 });
+				//newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
+				clickToStart.addSprite(newHighscoreText, { y: 160 });
 			}
 		}
 		
 		if (score <= 0 || oldHighScore >= newHighScore) {
-			clickToStart.addSprite(new TextSprite('Highscore is ' + highScore + ' points', '24pt Highspeed', 'yellow', 'center'), { y: 140 });
+			clickToStart.addSprite(new TextSprite('Highscore is ' + highScore + ' points', '24pt Highspeed', 'yellow', 'center'), { y: 160 });
 		}
 
 		// Store highscore only if player didn't cheat. 
@@ -279,10 +320,10 @@ var App = function() {
 							if (colliders[j].isEnemy) {
 								// Create explosion and play hit sound.
 								var position = colliders[j].getPosition();
-								wade.app.explosion(position);
+								wade.app.explosion(position, 1);
 								wade.playAudio(sounds.hit, false);
 
-								// Decrease health of collider (e.g. enemy, asteroid, ...).
+								// Decrease health of collider (e.g. enemy, , ...).
 								if (colliders[j].health > 0) {
 									colliders[j].health -= fireDamage;
 								}
@@ -290,7 +331,7 @@ var App = function() {
 								// Check enemy's health again.
 								if (colliders[j].health <= 0) {
 									// Create another explosion and play explode sound.
-									wade.app.explosion(position);
+									wade.app.explosion(position, 2);
 									wade.playAudio(sounds.explode, false);
 									
 									// Delete collider (enemy/asteroid).
@@ -384,18 +425,21 @@ var App = function() {
 				hit = false;
 
 				// Create explosion and play hit sound if player gets hit by a bullet.
-				wade.app.explosion(ship.getPosition());
+				wade.app.explosion(ship.getPosition(), 0);
 				wade.playAudio(sounds.hit, false);
 
 				// Decrease health.
-				playerHealth--;
+				if (playerHealth > 0) {
+					playerHealth--;
+				}
 				healthCounter.getSprite().setText(playerHealth);
 				
 				// Check health.
 				if (playerHealth <= 0) {
 					// Create another explosion and play explode sound if player's health is zero or less.
-					wade.app.explosion(ship.getPosition());
+					wade.app.explosion(ship.getPosition(), 2);
 					wade.playAudio(sounds.explode, false);
+					
 					wade.removeSceneObject(ship);
 					wade.setMainLoop(null, 'fire');
 					wade.setMainLoop(null, 'die');
@@ -408,12 +452,16 @@ var App = function() {
 						shooterData = { oldHighScore: highScore, newHighScore: score };
 						wade.storeLocalObject('shooterData', shooterData);
 					}
-
-					// Immediately clear scene and initialize app on death, because otherwise the app will freeze until all enemies and bullets are gone. :(
-					wade.clearScene();
-					wade.app.init();
-					clearTimeout(nextEnemy);
-					clearTimeout(nextAsteroid);
+	
+					// Wait for the animation to finish ...
+					var gameOver = setTimeout(function() {
+						// ... clear scene and initialize app on death.
+						wade.clearScene();
+						wade.app.init();
+						clearTimeout(nextEnemy);
+						clearTimeout(nextAsteroid);
+						clearTimeout(gameOver);
+					}, 250);
 				}
 			}
 		}, 'die');
@@ -477,9 +525,14 @@ var App = function() {
 	/**
 	 * Draw explosion.
 	 */
-	this.explosion = function(position) {
+	this.explosion = function(position, i) {
+		// Fallback
+		if (typeof(i) == 'undefined' || i == null || typeof(images.boom[i]) == 'undefined') {
+			i = 0;
+		}
+		
 		// Create an animation.
-		var animation = new Animation(images.boom, 6, 4, 30);
+		var animation = new Animation(images.boom[i].file, images.boom[i].x, images.boom[i].y, images.boom[i].speed);
 		
 		// Create a sprite of the animation.
 		var explosionSprite = new Sprite();
@@ -508,30 +561,8 @@ var App = function() {
 		var sprite;
 		
 		// Select random image of asteroid as sprite.
-		var asteroidId = getRandomInt(0, 6); 
-		switch (asteroidId) {
-			case 1:
-				sprite = new Sprite(images.asteroid1);
-				break;
-			case 2:
-				sprite = new Sprite(images.asteroid2);
-				break;
-			case 3:
-				sprite = new Sprite(images.asteroid3);
-				break;
-			case 4:
-				sprite = new Sprite(images.asteroid4);
-				break;
-			case 5:
-				sprite = new Sprite(images.asteroid5);
-				break;
-			case 6:
-				sprite = new Sprite(images.asteroid6);
-				break;
-			default:
-				sprite = new Sprite(images.asteroid0);
-				break;
-		}
+		var asteroidId = getRandomInt(0, 9);
+		sprite = new Sprite(images.asteroids[asteroidId]);
 		
 		// Calculate start and end coordinates.
 		var startX = (Math.random() - 0.5) * wade.getScreenWidth();
@@ -544,6 +575,7 @@ var App = function() {
 		wade.addSceneObject(asteroid);
 		asteroid.moveTo(endX, endY, 200);
 		asteroid.isEnemy = true;
+		asteroid.isAsteroid = true;
 		asteroid.health = asteroidHealth[asteroidId];
 		asteroid.initialHealth = asteroidHealth[asteroidId];
 		
@@ -569,20 +601,7 @@ var App = function() {
 
 		// Select random image of enemy as sprite.
 		var enemyId = getRandomInt(0, 3); 
-		switch (enemyId) {
-			case 1:
-				sprite = new Sprite(images.enemy1);
-				break;
-			case 2:
-				sprite = new Sprite(images.enemy2);
-				break;
-			case 3:
-				sprite = new Sprite(images.enemy3);
-				break;
-			default:
-				sprite = new Sprite(images.enemy0);
-				break;
-		}
+		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
 		var startX = (Math.random() - 0.5) * wade.getScreenWidth();
@@ -595,6 +614,7 @@ var App = function() {
 		wade.addSceneObject(enemy);
 		enemy.moveTo(endX, endY, 200);
 		enemy.isEnemy = true;
+		enemy.isAsteroid = false;
 		enemy.health = enemyHealth[enemyId];
 		enemy.initialHealth = enemyHealth[enemyId];
 
