@@ -73,7 +73,7 @@ canvas, #game {
 .fa {
 	color: #333;
 	cursor: pointer;
-	font-size:24pt;
+	font-size:2em;
 }
 
 .game-icons {
