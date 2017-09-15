@@ -16,6 +16,9 @@ var cheat = false;
  */
 var App = function() {
 	var ship;										// the player ship
+	var gamePaused     = false;
+	var gameStarted    = false;
+	var pauseSpriteObject = null;
 
 	var lastFireTime   = 0;							// the last time the player fired a bullet
 	var fireRate       = 4;							// how many bullets per second to fire
@@ -107,7 +110,7 @@ var App = function() {
 	
 	
 	/**
-	 * Load images and sounds.
+	 * Load images and sounds. Also set screen size.
 	 */
 	this.load = function() {
 		// Images
@@ -169,6 +172,11 @@ var App = function() {
 		if (newHighScore > oldHighScore) {
 			highScore = newHighScore;
 		}
+	
+		// Set screen size to current size of viewport.
+		wade.setMinScreenSize($(window).width(), $(window).height());
+		//wade.setMaxScreenSize($(window).width(), $(window).height());
+		console.log('Screen size set to: ' + $(window).width() + 'x' + $(window).height());
 		
 		// Main menu text.
 		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
@@ -223,18 +231,30 @@ var App = function() {
 
 		wade.addSceneObject(clickToStart);
 		
+		// Add pause text
+		pauseSpriteObject = new SceneObject();
+		var pauseSpriteText = new TextSprite('PAUSED', '32pt Highspeed', 'yellow', 'center');
+		pauseSpriteText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, pauseSpriteText.draw));
+		pauseSpriteObject.addSprite(new Sprite(images.logo), { y: -200 });
+		pauseSpriteObject.addSprite(pauseSpriteText, { y: 160 });
+
+		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 		
 		/**
 		 * Start game on mouse click.
 		 */
 		wade.app.onMouseDown = function() {
-			wade.removeSceneObject(clickToStart);
-			wade.app.startGame();
-			wade.app.onMouseDown = 0;
-
-			// Hide close button and cursor while playing.
-			gameBtnObj.style.display = 'none';
-			game.style.cursor = 'none';
+			if (wade.isMouseDown('0')) {
+				clearTimeout(nextAsteroid);
+				wade.removeSceneObject(clickToStart);
+				wade.clearScene();
+				wade.app.startGame();
+				wade.app.onMouseDown = 0;
+	
+				// Hide close button and cursor while playing.
+				gameBtnObj.style.display = 'none';
+				game.style.cursor = 'none';
+			}
 		};
 	};
 
@@ -257,29 +277,16 @@ var App = function() {
 			fireRateTemp = fireRate;
 
 			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
-			
-			// Normal fire.
-			/*
-			if (wade.isMouseDown('0')) {
-				console.log('left');
-			}
-			
-			// Unused.
-			if (wade.isMouseDown('1')) {
-				console.log('middle');
-			}
-			*/
-			
+		
 			// Turbo fire!
 			if (wade.isMouseDown('2') && cheat) {
-				//console.log('right');
 				fireRateTemp = 50;
 			}
 
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
 			var time = wade.getAppTime();
 			
-			if (wade.isMouseDown() && time >= nextFireTime) {
+			if ((wade.isMouseDown('0') || wade.isMouseDown('2')) && time >= nextFireTime) {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
@@ -455,28 +462,31 @@ var App = function() {
 	
 					// Wait for the animation to finish ...
 					var gameOver = setTimeout(function() {
+						gameStarted = false;
 						// ... clear scene and initialize app on death.
 						wade.clearScene();
 						wade.app.init();
 						clearTimeout(nextEnemy);
 						clearTimeout(nextAsteroid);
-						clearTimeout(gameOver);
+						//clearTimeout(gameOver);
 					}, 250);
 				}
 			}
 		}, 'die');
-
 		
-		// Initialize game values
-		if (cheat) {
-			playerHealth = 999;
-		} else {
-			playerHealth = 100;
+		
+		if (!gameStarted) {
+			// Initialize game values
+			if (cheat) {
+				playerHealth = 999;
+			} else {
+				playerHealth = 100;
+			}
+			
+			score = 0;
+			level = 1;
+			gameStarted = true;
 		}
-		
-		score = 0;
-		level = 1;
-
 		
 		// Add a score counter
 		var scoreIconSprite = new Sprite(images.scoreIcon);
@@ -506,13 +516,79 @@ var App = function() {
 		var levelSprite = new TextSprite(level, '32pt Highspeed', '#f88', 'left');
 		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelCounter);
-
-
+		
+		
 		// Spawn enemies every two seconds and asteroids every second.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 
+	
+	/**
+	 * Check for focus loss (e.g. ich the user tabs/clicks away).
+	 */
+	$(window).blur(function() {
+		if (gameStarted && !gamePaused) {
+			//console.log('Game paused due to focus loss.');
+			gamePaused = true;
+			wade.pauseSimulation();
+			clearTimeout(nextEnemy);
+			clearTimeout(nextAsteroid);
+			wade.app.onMouseMove = null;
+			wade.addSceneObject(pauseSpriteObject);
+			game.style.cursor = 'default';
+		} else {
+			// Don't spawn asteroids on main screen if window has no focus.
+			if (!gameStarted) {
+				clearTimeout(nextAsteroid);
+			}
+		}
+		
+		return false;
+	});
+	
+	/**
+	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
+	 */
+	$(window).focus(function() {
+		if (!gameStarted) {
+			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+		}
+	});
+
+	
+	/**
+	 * Check if space key has been pressed. Toggles game to pause/resume.
+	 */
+	this.onKeyDown = function(eventData) {
+		// Check for space key 
+		if (gameStarted && eventData.keyCode == 32) {
+			gamePaused = !gamePaused;
+
+			if (gamePaused) {
+				//console.log('Game paused by user.');
+				wade.pauseSimulation();
+				clearTimeout(nextEnemy);
+				clearTimeout(nextAsteroid);
+				wade.app.onMouseMove = null;
+				wade.addSceneObject(pauseSpriteObject);
+				game.style.cursor = 'default';
+			} else {
+				//console.log('Game resumed by user.');
+				game.style.cursor = 'none';
+				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
+				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+				wade.removeSceneObject(pauseSpriteObject);
+				wade.resumeSimulation();
+				wade.app.onMouseMove = function(eventData) {
+					ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+				};
+			}
+		}
+
+		return false;
+	};
+	
 	
 	/**
 	 * Move ship according to mouse move.

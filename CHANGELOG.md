@@ -20,3 +20,8 @@
 - updated explosion and hit animations
 - fixed explosion sound issue
 - updated bullets
+- by default try to use WebGL, but fallback to 2d canvas on failure
+- added option to pause game (press space key to toggle)
+- added check for focus loss (will pause the game automatically)
+- added asteroids to the main screen
+- updated logo and toggle icons
