@@ -15,37 +15,43 @@ var cheat = false;
  *
  */
 var App = function() {
-	var ship;										// the player ship
+	var ship;										// Player's ship.
+	var gamePaused     = false;						// Game paused.
+	var gameStarted    = false;						// Game started.
+	var pauseSpriteObj = null;
+	
+	var force2d        = false;						// If set true 2D canvas is preferred over WebGL, even if it's fully supported.
+	var defaultLayerId = 1;
 
-	var lastFireTime   = 0;							// the last time the player fired a bullet
-	var fireRate       = 4;							// how many bullets per second to fire
-	var fireRateTemp   = 4;							// temporary fire rate (e.g. overrides default fire rate if cheat-mode is enabled)
-	var fireDamage     = 200;						// how much damage is caused by one shot of the player's ship
+	var lastFireTime   = 0;							// The last time the player fired a bullet.
+	var fireRate       = 4;							// How many bullets per second to fire.
+	var fireRateTemp   = 4;							// Temporary fire rate (e.g. overrides default fire rate if cheat-mode is enabled).
+	var fireDamage     = 200;						// How much damage is caused by one shot of the player's ship.
 	
-	var enemyHealth    = [ 400, 800, 1200, 1600 ];	// enemy's health
-	var enemyDelay     = 2000;						// how long to wait from spawning one enemy to spawning the next one
-	var nextEnemy;									// the process that will spawn the next enemy
+	var enemyHealth    = [ 400, 800, 1200, 1600 ];	// Enemy's health.
+	var enemyDelay     = 2000;						// How long to wait from spawning one enemy to spawning the next one.
+	var nextEnemy;									// The process that will spawn the next enemy.
 
-	var asteroidHealth = [ 200, 200, 200, 300, 400, 400, 600, 500, 400, 600 ];	// asteroid's health
-	var asteroidDelay  = 1000;						// how long to wait from spawning one asteroid to spawning the next one
-	var nextAsteroid;								// the process that will spawn the next asteroid
+	var asteroidHealth = [ 200, 200, 200, 300, 400, 400, 600, 500, 400, 600 ];	// Asteroid's health.
+	var asteroidDelay  = 1000;						// How long to wait from spawning one asteroid to spawning the next one.
+	var nextAsteroid;								// The process that will spawn the next asteroid.
 	
-	var activeBullets  = [];						// a list of bullets we've fired and are still active
+	var activeBullets  = [];						// A list of bullets we've fired and are still active.
 	
-	var scoreCounter;								// an object to display the score
-	var score          = 0;							// the current score
+	var scoreCounter;								// An object to display the score.
+	var score          = 0;							// Current score.
 	
-	var healthCounter;								// object to display the health
-	var playerHealth   = 100;						// initial health
+	var healthCounter;								// Object to display the health.
+	var playerHealth   = 100;						// Initial health of player's ship.
 	
-	var levelCounter;								// object to display the level
-	var level          = 1;							// initial level
+	var levelCounter;								// Object to display the level.
+	var level          = 1;							// Initial level.
 	
 	var images = {
 		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
 
-		// Animated explosions (file, animation speed, number of tiles per x/y-axis)
+		// Animated explosions (file, animation speed, number of tiles per x/y-axis).
 		boom : {
 			0 : {
 					file: '../img/animations/explode_4x4_ship.png',
@@ -105,9 +111,12 @@ var App = function() {
 		explode     : '../sounds/explode.mp3'
 	}
 	
+	var toggleTitle       = document.getElementById('toggleTitle');
+	var toggleRendererBtn = $('#toggleRendererBtn');
+
 	
 	/**
-	 * Load images and sounds.
+	 * Load images and sounds. Also set screen size.
 	 */
 	this.load = function() {
 		// Images
@@ -148,6 +157,31 @@ var App = function() {
 	 * Initialize game.
 	 */
 	this.init = function() {
+		// Set layer render mode to either WebGL or 2D canvas.
+		var force2dData = wade.retrieveLocalObject('force2d');
+		force2d = (force2dData && force2dData.force2d) || force2d;
+		force2d = (getCookie('force2d') == 'true') || force2d;
+
+		if (force2d) {
+			wade.setLayerRenderMode(defaultLayerId, '2d');
+			toggleRendererBtn.removeClass('fa-toggle-on');
+			toggleRendererBtn.addClass('fa-toggle-off');
+			toggleTitle.title = 'Enable WebGL';
+		} else {
+			wade.setLayerRenderMode(defaultLayerId, 'webgl');
+			toggleRendererBtn.removeClass('fa-toggle-off');
+			toggleRendererBtn.addClass('fa-toggle-on');
+			toggleTitle.title = 'Disable WebGL';
+		}
+
+		
+		// Set screen size to current size of viewport.
+		wade.setMinScreenSize($(window).width(), $(window).height());
+		wade.setMaxScreenSize($(window).width(), $(window).height());
+		//console.log('Layer render mode: ' + wade.getLayerRenderMode(defaultLayerId) + '\nforce2d: ' + force2d + '\nScreen size set to: ' + $(window).width() + 'x' + $(window).height());
+
+		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
+		
 		// Load highscore.
 		var shooterData = wade.retrieveLocalObject('shooterData');
 		var oldHighScore = (shooterData && shooterData.oldHighScore) || 0;
@@ -155,6 +189,7 @@ var App = function() {
 		var gameObj = document.getElementById('game');
 		var gameBtnObj = document.getElementById('game-icons');
 		var highScore = oldHighScore;
+		
 		
 		// Check for highscore cookie.
 		var cookieHighscoreName = 'overkill_highscore';
@@ -170,30 +205,55 @@ var App = function() {
 			highScore = newHighScore;
 		}
 		
-		// Main menu text.
-		var clickText = new TextSprite('Insert coin', '36pt Highspeed', 'white', 'center');
+		
+		/**
+		 * Main screen text.
+		 */
+		var menuTexts = {
+				insertCoin  : '- INSERT COIN -',
+				highscoreIs : 'HIGHSCORE IS %i POINTS',
+				youScored   : 'YOU %s %i POINTS'
+		}
+		
+		// Ugly workaround for cut-off texts when using WebGL.
+		if (defaultRenderer == 'webgl') {
+			menuTexts = padStrings(menuTexts);
+		}
+		
+		// Prepare text sprites of main screen.
+		var clickText = new TextSprite(menuTexts.insertCoin, '36pt Highspeed', 'white', 'center');
 		clickText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, clickText.draw));
 		var clickToStart = new SceneObject();
 		
 		clickToStart.addSprite(clickText, { y: 320 });
 		
 		if (score > 0) {
-			var scoreVerb = 'scored';
+			var scoreVerb = 'SCORED';
 			if (cheat) {
-				scoreVerb = 'cheated';
+				scoreVerb = 'CHEATED';
+			}
+			
+			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
+			scoreMsg = scoreMsg.replace('%i', score);
+			if (defaultRenderer == 'webgl') {
+				scoreMsg = padStrings(scoreMsg);
 			}
 
-			clickToStart.addSprite(new TextSprite('You ' + scoreVerb + ' ' + score + ' points', '24pt Highspeed', 'white', 'center'), { y: 120 });
+			clickToStart.addSprite(new TextSprite(scoreMsg, '24pt Highspeed', 'white', 'center'), { y: 120 });
 
 			if (newHighScore > oldHighScore) {
-				var highscoreMessage = 'New Highscore';
+				var highscoreMessage = 'NEW HIGHSCORE';
 				
 				if (cheat) {
-					highscoreMessage += ' not saved';
+					highscoreMessage += ' NOT SAVED';
 				}
 				
 				highscoreMessage += '!';
 				
+				// Again that ugly thing.
+				if (defaultRenderer == 'webgl') {
+					highscoreMessage = padStrings(highscoreMessage);
+				}
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
 				//newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
 				clickToStart.addSprite(newHighscoreText, { y: 160 });
@@ -201,7 +261,8 @@ var App = function() {
 		}
 		
 		if (score <= 0 || oldHighScore >= newHighScore) {
-			clickToStart.addSprite(new TextSprite('Highscore is ' + highScore + ' points', '24pt Highspeed', 'yellow', 'center'), { y: 160 });
+			menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', highScore);
+			clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
 		}
 
 		// Store highscore only if player didn't cheat. 
@@ -216,25 +277,38 @@ var App = function() {
 		
 		// Add logo
 		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
-
+		
+		// Add pause text into hidden scene object.
+		pauseSpriteObj = new SceneObject();
+		var pauseSpriteText = new TextSprite('PAUSED', '32pt Highspeed', 'yellow', 'center');
+		pauseSpriteText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, pauseSpriteText.draw));
+		pauseSpriteObj.addSprite(new Sprite(images.logo), { y: -200 });
+		pauseSpriteObj.addSprite(pauseSpriteText, { y: 160 });
+		
 		// Show close button and default cursor while not playing.
 		gameBtnObj.style.display = 'block';
 		game.style.cursor = 'default';
-
+		
+		// Show main menu.
 		wade.addSceneObject(clickToStart);
 		
+		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 		
 		/**
-		 * Start game on mouse click.
+		 * Start game on left mouse click.
 		 */
 		wade.app.onMouseDown = function() {
-			wade.removeSceneObject(clickToStart);
-			wade.app.startGame();
-			wade.app.onMouseDown = 0;
+			if (wade.isMouseDown('0')) {
+				// Hide close button and cursor while playing.
+				gameBtnObj.style.display = 'none';
+				game.style.cursor = 'none';
 
-			// Hide close button and cursor while playing.
-			gameBtnObj.style.display = 'none';
-			game.style.cursor = 'none';
+				clearTimeout(nextAsteroid);
+				wade.removeSceneObject(clickToStart);
+				wade.clearScene();
+				wade.app.startGame();
+				wade.app.onMouseDown = 0;
+			}
 		};
 	};
 
@@ -257,29 +331,16 @@ var App = function() {
 			fireRateTemp = fireRate;
 
 			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
-			
-			// Normal fire.
-			/*
-			if (wade.isMouseDown('0')) {
-				console.log('left');
-			}
-			
-			// Unused.
-			if (wade.isMouseDown('1')) {
-				console.log('middle');
-			}
-			*/
-			
+		
 			// Turbo fire!
 			if (wade.isMouseDown('2') && cheat) {
-				//console.log('right');
 				fireRateTemp = 50;
 			}
 
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
 			var time = wade.getAppTime();
 			
-			if (wade.isMouseDown() && time >= nextFireTime) {
+			if ((wade.isMouseDown('0') || wade.isMouseDown('2')) && time >= nextFireTime) {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
@@ -455,28 +516,30 @@ var App = function() {
 	
 					// Wait for the animation to finish ...
 					var gameOver = setTimeout(function() {
+						gameStarted = false;
+						clearTimeout(nextEnemy);
+						clearTimeout(nextAsteroid);
 						// ... clear scene and initialize app on death.
 						wade.clearScene();
 						wade.app.init();
-						clearTimeout(nextEnemy);
-						clearTimeout(nextAsteroid);
-						clearTimeout(gameOver);
 					}, 250);
 				}
 			}
 		}, 'die');
-
 		
-		// Initialize game values
-		if (cheat) {
-			playerHealth = 999;
-		} else {
-			playerHealth = 100;
+		
+		if (!gameStarted) {
+			// Initialize game values
+			if (cheat) {
+				playerHealth = 999;
+			} else {
+				playerHealth = 100;
+			}
+			
+			score = 0;
+			level = 1;
+			gameStarted = true;
 		}
-		
-		score = 0;
-		level = 1;
-
 		
 		// Add a score counter
 		var scoreIconSprite = new Sprite(images.scoreIcon);
@@ -506,13 +569,80 @@ var App = function() {
 		var levelSprite = new TextSprite(level, '32pt Highspeed', '#f88', 'left');
 		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelCounter);
-
-
+		
+		
 		// Spawn enemies every two seconds and asteroids every second.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 
+	
+	/**
+	 * Check for focus loss (e.g. ich the user tabs/clicks away).
+	 */
+	$(window).blur(function() {
+		if (gameStarted && !gamePaused) {
+			console.log('Game paused due to focus loss.');
+			gamePaused = true;
+			wade.pauseSimulation();
+			clearTimeout(nextEnemy);
+			clearTimeout(nextAsteroid);
+			wade.app.onMouseMove = null;
+			wade.addSceneObject(pauseSpriteObj);
+			game.style.cursor = 'default';
+		} else {
+			// Don't spawn asteroids on main screen if window has no focus.
+			if (!gameStarted) {
+				console.log('Asteroid timeout cleared due to focus loss.');
+				clearTimeout(nextAsteroid);
+			}
+		}
+		
+		return false;
+	});
+	
+	/**
+	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
+	 */
+	$(window).focus(function() {
+		if (!gameStarted) {
+			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+		}
+	});
+
+	
+	/**
+	 * Check if space key has been pressed. Toggles game to pause/resume.
+	 */
+	this.onKeyDown = function(eventData) {
+		// Check for space key 
+		if (gameStarted && eventData.keyCode == 32) {
+			gamePaused = !gamePaused;
+
+			if (gamePaused) {
+				//console.log('Game paused by user.');
+				wade.pauseSimulation();
+				clearTimeout(nextEnemy);
+				clearTimeout(nextAsteroid);
+				wade.app.onMouseMove = null;
+				wade.addSceneObject(pauseSpriteObj);
+				game.style.cursor = 'default';
+			} else {
+				//console.log('Game resumed by user.');
+				game.style.cursor = 'none';
+				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
+				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+				wade.removeSceneObject(pauseSpriteObj);
+				wade.resumeSimulation();
+				wade.app.onMouseMove = function(eventData) {
+					ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+				};
+			}
+		}
+
+		return false;
+	};
+	
 	
 	/**
 	 * Move ship according to mouse move.
@@ -681,7 +811,30 @@ var App = function() {
 		// Spawn another enemy.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 	};
+	
+	
+	/**
+	 * Toggle layer renderer
+	 */
+	this.toggleRenderer = function() {
+		force2d = !force2d;
+		
+		// Update local store and cookie with settings.
+		var shooterData = { force2d: force2d };
+		wade.storeLocalObject('force2d', shooterData);
+		setCookie('force2d', force2d, 365);
+
+		// Reset game state to activate new settings.
+		clearTimeout(nextEnemy);
+		clearTimeout(nextAsteroid);
+		wade.setMainLoop(null, 'fire');
+		wade.setMainLoop(null, 'die');
+		gameStarted = false;
+		wade.clearScene();
+		wade.app.init();
+	};
 };
+
 
 /**
  * Return random integer between min and max values.
@@ -690,4 +843,24 @@ var App = function() {
  */
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+/**
+ * Surround strings or objects which contain strings with padding.
+ * 
+ * @param obj
+ * @returns entity of input type
+ */
+function padStrings(obj) {
+	var padding = '       ';
+	if (typeof(obj) == 'object') {
+		var tmp = {};
+		for (var i in obj) {
+			tmp[i] = padding + obj[i] + padding;
+		}
+	} else {
+		tmp = padding + obj + padding;
+	}
+	return tmp;
 }
