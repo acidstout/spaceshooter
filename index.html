@@ -7,10 +7,10 @@
 		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 		<link rel="stylesheet" type="text/css" href="css/style.css"/>
 		<link rel="icon" type="image/png" href="img/ship.png"/>
-		<script src="js/jquery.min.js"></script>
-		<script src="js/starscroll.min.js"></script>
-		<script src="js/wade.min.js"></script>
-		<script src="js/cookie.min.js"></script>
+		<script src="js/vendor/jquery.min.js"></script>
+		<script src="js/vendor/starscroll.min.js"></script>
+		<script src="js/vendor/wade.min.js"></script>
+		<script src="js/vendor/cookie.min.js"></script>
 		<script src="js/init.js"></script>
 		<title>Overkill - A retro space shooter</title>
 	</head>
@@ -18,7 +18,7 @@
 		<div id="starfield"></div>
 		<div id="game"></div>
 		<div id="game-icons" class="game-icons">
-			<div class="game-icon" onclick="exitFullscreen();" title="Go back"><a href="https://rekow.ch"><span class="fa fa-times"></span></a></div>
+			<div class="game-icon" onclick="toggleFullscreen();" title="Go back"><a href="https://rekow.ch"><span class="fa fa-times"></span></a></div>
 			<div class="game-icon" onclick="toggleFullscreen(document.documentElement);" title="Toggle fullscreen"><span class="fa fa-window-restore"></span></div>
 			<div id="toggleRendererTitle" class="game-icon" onclick="wade.app.toggleRenderer();" title="Enable WebGL"><span id="toggleRendererBtn" class="fa fa-toggle-off"></span></div>
 			<div id="toggleMusicTitle" class="game-icon" onclick="wade.app.toggleMusic();" title="Enable music"><span id="toggleMusicBtn" class="fa fa-music music-off"></span></div>
