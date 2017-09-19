@@ -20,7 +20,7 @@ html, body {
     right: 0;
     bottom: 0;
 	overflow: hidden;
-    z-index: -1000;
+    /* z-index: -1000; */
 	background: #000 radial-gradient(circle at 50% 50% , rgba(50, 0, 150, 0.15) 50%, rgba(50, 0, 150, 0.05) 100%) repeat scroll 0 0 / cover; /* nice faded radial background */
 	-webkit-tap-highlight-color: rgba(255, 255, 255, 0);
 	-ms-touch-action: none;
@@ -79,7 +79,9 @@ canvas, #game {
 .game-icons {
 	position:absolute;
 	top: 0.6em;
-	right:1em;
+	right: 1em;
+	height: 32px;
+	width: 300px;
 }
 
 .game-icons > .game-icon {

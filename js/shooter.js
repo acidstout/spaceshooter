@@ -7,8 +7,21 @@
  *
  */
 
+// Cheater? ;)
 var cheat = false;
 //cheat = true;
+
+
+// Check if mobile device is used.
+var isMobileDevice = isMobileDevice();
+
+
+// Correct position of top row icons for mobile devices.
+if (isMobileDevice) {
+	console.log('Detected mobile device.');
+	$('.game-icons').css({ 'top' : '2em' });
+}
+
 
 /**
  * Main function of app
@@ -225,13 +238,31 @@ var App = function() {
 		// TODO: testing
 		wade.setResolutionFactor(1);
 		
-		wade.setMinScreenSize($(window).width(), $(window).height());
-		wade.setMaxScreenSize($(window).width(), $(window).height());
-		//console.log('Layer render mode: ' + wade.getLayerRenderMode(defaultLayerId) + '\nforce2d: ' + force2d + '\nScreen size set to: ' + $(window).width() + 'x' + $(window).height());
+		//wade.setMinScreenSize($(window).width(), $(window).height());
+		//wade.setMaxScreenSize($(window).width(), $(window).height());
 
-		
+		wade.setMinScreenSize(1920, 1080);
+		wade.setMaxScreenSize(1920, 1080);
+
 		// Get default renderer.
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
+		
+		var minSize = wade.getMinScreenWidth();
+		minSize += 'x' + wade.getMinScreenHeight(); 
+		var maxSize = wade.getMaxScreenWidth();
+		maxSize += 'x' +  wade.getMaxScreenHeight();
+		
+		// Log statistics into file.
+		log(
+			'screen size: '
+			+ $(window).width() +'x' + $(window).height()
+			+ ', actual min/max screen sizes: '
+			+ minSize
+			+ ' / '
+			+ maxSize
+			+ ', render-mode: ' + defaultRenderer
+			+ ', force2d: ' + force2d
+		);
 		
 		
 		// Load highscore.
@@ -373,7 +404,7 @@ var App = function() {
 		 * Start game on left mouse click.
 		 */
 		wade.app.onMouseDown = function() {
-			if (wade.isMouseDown('0')) {
+			if (wade.isMouseDown(0) || (wade.isMouseDown() && isMobileDevice)) {
 				// Hide close button and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				game.style.cursor = 'none';
@@ -408,14 +439,14 @@ var App = function() {
 			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
 		
 			// Turbo fire!
-			if (wade.isMouseDown('2') && cheat) {
+			if (wade.isMouseDown(2) && cheat) {
 				fireRateTemp = 50;
 			}
 
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
 			var time = wade.getAppTime();
 			
-			if ((wade.isMouseDown('0') || wade.isMouseDown('2')) && time >= nextFireTime) {
+			if ((wade.isMouseDown(0) || wade.isMouseDown(2) || (wade.isMouseDown() && isMobileDevice)) && time >= nextFireTime) {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
