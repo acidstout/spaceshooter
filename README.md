@@ -1,10 +1,10 @@
 # Overkill - A retro space shooter
-A simple space shooter based on the WADE game engine.
+A simple space shooter based on the WADE game engine. Separated in five tiers with increasing difficulty and different enemies. The huge one in tier five is very strong. Hint: try to avoid flying into asteroids.
 
 ## Features
-- Retro graphics
+- Beautiful retro graphics
 - Parallax starfield background
-- Multiple enemy types with different strength
+- Multiple enemy types with different strength and fire rate
 - Basic health, score and level logic
 - Per-pixel collision logic
 

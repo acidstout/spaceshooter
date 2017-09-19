@@ -28,7 +28,7 @@ var App = function() {
 	var fireRateTemp   = 4;							// Temporary fire rate (e.g. overrides default fire rate if cheat-mode is enabled).
 	var fireDamage     = 200;						// How much damage is caused by one shot of the player's ship.
 	
-	var enemyHealth    = [ 400, 800, 1200, 1600 ];	// Enemy's health.
+	var enemyHealth    = [ 400, 600, 800, 1500, 5000 ];	// Enemy's health.
 	var enemyDelay     = 2000;						// How long to wait from spawning one enemy to spawning the next one.
 	var nextEnemy;									// The process that will spawn the next enemy.
 
@@ -74,15 +74,42 @@ var App = function() {
 		},
 		
 		// Bullets
-		bullet      : '../img/bullets/bullet2.png',
-		enemyBullet : '../img/bullets/bullet3.png',
+		shipBullet   : '../img/bullets/bullet_ship.png',
+		enemyBullets : {
+			0 : {
+					file: '../img/bullets/bullet0.png',
+					delay: 600,
+					damage: 1
+				},
+			1 : {
+					file: '../img/bullets/bullet1.png',
+					delay: 500,
+					damage: 3
+				},
+			2 : {
+					file: '../img/bullets/bullet2.png',
+					delay: 400,
+					damage: 5
+				},
+			3 : {
+					file: '../img/bullets/bullet3.png',
+					delay: 300,
+					damage: 10
+				},
+			4 : {
+					file: '../img/bullets/bullet4.png',
+					delay: 200,
+					damage: 20
+				}
+		},
 		
 		// Enemies
 		enemies     : {
 			0       : '../img/enemies/enemy0.png',
 			1       : '../img/enemies/enemy1.png',
 			2       : '../img/enemies/enemy2.png',
-			3       : '../img/enemies/enemy3.png'
+			3       : '../img/enemies/enemy3.png',
+			4       : '../img/enemies/enemy4.png'
 		},
 		
 		// Asteroids
@@ -114,7 +141,6 @@ var App = function() {
 	var toggleTitle       = document.getElementById('toggleTitle');
 	var toggleRendererBtn = $('#toggleRendererBtn');
 
-	
 	/**
 	 * Load images and sounds. Also set screen size.
 	 */
@@ -122,11 +148,14 @@ var App = function() {
 		// Images
 		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
-		wade.loadImage(images.bullet);
-		wade.loadImage(images.enemyBullet);
+		
+		// Bullets
+		wade.loadImage(images.shipBullet);
+		for (var i = 0; i < Object.keys(images.enemyBullets).length; i++) {
+			wade.loadImage(images.enemyBullets[i].file);
+		}
 		
 		// Animation
-		//wade.loadImage(images.boom);
 		for (var i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
@@ -344,7 +373,7 @@ var App = function() {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
-				var sprite = new Sprite(images.bullet);
+				var sprite = new Sprite(images.shipBullet);
 				var bullet = new SceneObject(sprite, 0, shipPosition.x, shipPosition.y - shipSize.y / 2);
 				wade.addSceneObject(bullet);
 				wade.playAudio(sounds.shoot, false);
@@ -364,7 +393,7 @@ var App = function() {
 					score -= 10;
 				}
 				
-				if (score < 0) {
+				if (score < 0 || score == 'NaN') {
 					score = 0;
 				}
 			}
@@ -399,7 +428,7 @@ var App = function() {
 									wade.removeSceneObject(colliders[j]);
 
 									// Increase score if enemy/asteroid shot down by a 10th of its initial health.
-									score += Math.floor(colliders[j].initialHealth / 10);
+									score += Math.floor(colliders[j].initialHealth / 10) * level;
 								}
 
 								// Delete bullet.
@@ -414,9 +443,11 @@ var App = function() {
 			}
 
 			// Increase level and health every 1000 points.
-			if (Math.floor(score / 1000) > level) {
+			if (Math.floor(score / 1000) > level && level < 5) {
 				level += 1;
-				playerHealth += 10;
+				if (!cheat) {
+					playerHealth = 100;
+				}
 
 				// Make enemies spawn faster.
 				if (enemyDelay > 200) {
@@ -453,30 +484,38 @@ var App = function() {
 			// Get a list of overlapping objects on the current layer.
 			var overlapping = ship.getOverlappingObjects(false, 'axis-aligned');
 			var hit = false;
+			var enemyDamage = 1;
 			
 			// If the list is not empty ...
 			if (overlapping.length > 0) {
 				
 				for (var i = 0; i < overlapping.length; i++) {
 
-					// ... check if the overlapping object is either an enemy or an enemy's bullet.
-					if (overlapping[i].isEnemy || overlapping[i].isEnemyBullet) {
-						
-						// Comparing per-pixel is quite slow, but the only easy way to check for collisions while discarding transparent pixels.
-						if (ship.overlapsObject(overlapping[i], 'pixel')) {
-							// Decrease health of overlapping object by a 10th of the default fire damage.
-							if (overlapping[i].health > 0) {
-								overlapping[i].health -= Math.floor(fireDamage / 10);
-							}
+					if (typeof(overlapping[i]) != 'undefined') {
+						// ... check if the overlapping object is either an enemy or an enemy's bullet.
+						if (overlapping[i].isEnemy || overlapping[i].isEnemyBullet) {
 							
-							// Remove enemy's bullet if it hit the player's ship.
-							if (overlapping[i].isEnemyBullet || overlapping[i].health <= 0) {
-								wade.removeSceneObject(overlapping[i]);
-								wade.removeObjectFromArrayByIndex(i, overlapping);
+							// Comparing per-pixel is quite slow, but the only easy way to check for collisions while discarding transparent pixels.
+							if (typeof(overlapping[i]) != 'undefined' && ship.overlapsObject(overlapping[i], 'pixel')) {
+								// Decrease health of overlapping object by a 10th of the default fire damage.
+								if (overlapping[i].health > 0) {
+									overlapping[i].health -= Math.floor(fireDamage / 10);
+								}
+								
+								// Remove enemy's bullet and/or ship if it hit the player's ship.
+								if (typeof(overlapping[i]) != 'undefined' && (overlapping[i].isEnemyBullet || overlapping[i].health <= 0)) {
+									wade.removeSceneObject(overlapping[i]);
+									wade.removeObjectFromArrayByIndex(i, overlapping);
+								}
+								
+								if (typeof(overlapping[i]) != 'undefined') {
+									enemyDamage = overlapping[i].damage || enemyDamage;
+								}
+
+								//console.log(enemyDamage);
+								hit = true;
+								break;
 							}
-							
-							hit = true;
-							break;
 						}
 					}
 				}
@@ -491,7 +530,11 @@ var App = function() {
 
 				// Decrease health.
 				if (playerHealth > 0) {
-					playerHealth--;
+					playerHealth -= enemyDamage;
+				}
+				
+				if (playerHealth < 0 || playerHealth == 'NaN') {
+					playerHealth = 0;
 				}
 				healthCounter.getSprite().setText(playerHealth);
 				
@@ -708,6 +751,7 @@ var App = function() {
 		asteroid.isAsteroid = true;
 		asteroid.health = asteroidHealth[asteroidId];
 		asteroid.initialHealth = asteroidHealth[asteroidId];
+		asteroid.damage = Math.floor(asteroidHealth[asteroidId] / 100);
 		
 		
 		/**
@@ -729,8 +773,18 @@ var App = function() {
 		// Create an empty sprite.
 		var sprite;
 
+		var maxEnemy = level - 1;
+		var enemyCount = Object.keys(images.enemies).length - 1;
+		
+		//console.log('enemies: ' + enemyCount);
+		//console.log('level: ' + level);
+
+		if (maxEnemy > enemyCount) {
+			maxEnemy = enemyCount;
+		}
+		
 		// Select random image of enemy as sprite.
-		var enemyId = getRandomInt(0, 3); 
+		var enemyId = getRandomInt(0, maxEnemy);
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
@@ -747,6 +801,7 @@ var App = function() {
 		enemy.isAsteroid = false;
 		enemy.health = enemyHealth[enemyId];
 		enemy.initialHealth = enemyHealth[enemyId];
+		enemy.damage = Math.floor(enemyHealth[enemyId] / 100);
 
 		
 		/**
@@ -792,9 +847,10 @@ var App = function() {
 			var endY = startY + dy * 3000;
 
 			// Create bullet.
-			var sprite = new Sprite(images.enemyBullet);
+			var sprite = new Sprite(images.enemyBullets[enemyId].file);
 			var bullet = new SceneObject(sprite, 0, startX, startY);
 			bullet.isEnemyBullet = true;
+			bullet.damage = images.enemyBullets[enemyId].damage;
 			wade.addSceneObject(bullet);
 			bullet.moveTo(endX, endY, 200);
 
@@ -804,7 +860,7 @@ var App = function() {
 			};
 
 			// Schedule next bullet.
-			this.schedule(600, 'fire'); // 1000
+			this.schedule(images.enemyBullets[enemyId].delay, 'fire'); // 1000
 		};
 		enemy.schedule(300, 'fire'); // 500
 		
@@ -853,7 +909,7 @@ function getRandomInt(min, max) {
  * @returns entity of input type
  */
 function padStrings(obj) {
-	var padding = '       ';
+	var padding = '       ';
 	if (typeof(obj) == 'object') {
 		var tmp = {};
 		for (var i in obj) {

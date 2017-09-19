@@ -26,3 +26,4 @@
 - added asteroids to the main screen
 - updated logo and toggle icons
 - added option to switch between WebGL and 2D canvas
+- updated asteroids and enemies (images, health, strength, fire rate, ...)
