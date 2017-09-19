@@ -46,6 +46,8 @@ var App = function() {
 	
 	var levelCounter;								// Object to display the level.
 	var level          = 1;							// Initial level.
+	var loopUid        = null;						// Uid of the background music. Used to start/stop it.
+	var musicPlaying   = false;						// Status of background music
 	
 	var images = {
 		logo		: '../img/logo.png',
@@ -135,11 +137,14 @@ var App = function() {
 	var sounds = {
 		shoot       : '../sounds/shoot.mp3',
 		hit         : '../sounds/hit.mp3',
-		explode     : '../sounds/explode.mp3'
+		explode     : '../sounds/explode.mp3',
+		loop        : '../sounds/loop.mp3'
 	}
 	
-	var toggleTitle       = document.getElementById('toggleTitle');
-	var toggleRendererBtn = $('#toggleRendererBtn');
+	var toggleRendererTitle    = document.getElementById('toggleRendererTitle');
+	var toggleRendererBtn      = $('#toggleRendererBtn');
+	var toggleMusicTitle       = document.getElementById('toggleMusicTitle');
+	var toggleMusicBtn         = $('#toggleMusicBtn');
 
 	/**
 	 * Load images and sounds. Also set screen size.
@@ -179,6 +184,7 @@ var App = function() {
 		wade.loadAudio(sounds.shoot);
 		wade.loadAudio(sounds.hit);
 		wade.loadAudio(sounds.explode);
+		wade.loadAudio(sounds.loop);
 	};
 
 	
@@ -195,21 +201,38 @@ var App = function() {
 			wade.setLayerRenderMode(defaultLayerId, '2d');
 			toggleRendererBtn.removeClass('fa-toggle-on');
 			toggleRendererBtn.addClass('fa-toggle-off');
-			toggleTitle.title = 'Enable WebGL';
+			toggleRendererTitle.title = 'Enable WebGL';
 		} else {
 			wade.setLayerRenderMode(defaultLayerId, 'webgl');
 			toggleRendererBtn.removeClass('fa-toggle-off');
 			toggleRendererBtn.addClass('fa-toggle-on');
-			toggleTitle.title = 'Disable WebGL';
+			toggleRendererTitle.title = 'Disable WebGL';
+		}
+
+		
+		// Check whether to play background music.
+		var musicPlayingData = wade.retrieveLocalObject('music');
+		musicPlaying = (musicPlayingData && musicPlayingData.music) || musicPlaying;
+		musicPlaying = (getCookie('music') == 'true') || musicPlaying;
+		if (musicPlaying) {
+			toggleMusicBtn.removeClass('music-off');
+			toggleMusicBtn.addClass('music-on');
+			toggleMusicTitle.title = 'Disable music';
 		}
 
 		
 		// Set screen size to current size of viewport.
+		// TODO: testing
+		wade.setResolutionFactor(1);
+		
 		wade.setMinScreenSize($(window).width(), $(window).height());
 		wade.setMaxScreenSize($(window).width(), $(window).height());
 		//console.log('Layer render mode: ' + wade.getLayerRenderMode(defaultLayerId) + '\nforce2d: ' + force2d + '\nScreen size set to: ' + $(window).width() + 'x' + $(window).height());
 
+		
+		// Get default renderer.
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
+		
 		
 		// Load highscore.
 		var shooterData = wade.retrieveLocalObject('shooterData');
@@ -235,19 +258,19 @@ var App = function() {
 		}
 		
 		
-		/**
-		 * Main screen text.
-		 */
+		// Main screen text.
 		var menuTexts = {
 				insertCoin  : '- INSERT COIN -',
 				highscoreIs : 'HIGHSCORE IS %i POINTS',
 				youScored   : 'YOU %s %i POINTS'
 		}
 		
+		
 		// Ugly workaround for cut-off texts when using WebGL.
 		if (defaultRenderer == 'webgl') {
 			menuTexts = padStrings(menuTexts);
 		}
+		
 		
 		// Prepare text sprites of main screen.
 		var clickText = new TextSprite(menuTexts.insertCoin, '36pt Highspeed', 'white', 'center');
@@ -294,6 +317,7 @@ var App = function() {
 			clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
 		}
 
+		
 		// Store highscore only if player didn't cheat. 
 		if(!cheat) {
 			// Update highscore cookie.
@@ -304,8 +328,10 @@ var App = function() {
 			wade.storeLocalObject('shooterData', shooterData);
 		}
 		
+		
 		// Add logo
 		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
+		
 		
 		// Add pause text into hidden scene object.
 		pauseSpriteObj = new SceneObject();
@@ -314,14 +340,34 @@ var App = function() {
 		pauseSpriteObj.addSprite(new Sprite(images.logo), { y: -200 });
 		pauseSpriteObj.addSprite(pauseSpriteText, { y: 160 });
 		
+		
 		// Show close button and default cursor while not playing.
 		gameBtnObj.style.display = 'block';
 		game.style.cursor = 'default';
 		
+		
 		// Show main menu.
 		wade.addSceneObject(clickToStart);
 		
+		
+		// Initialize asteroids on the main screen.
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+		
+		
+		// Decide whether to play music or not.
+		if (musicPlaying) {
+			loopUid = wade.playAudio(sounds.loop, true);
+			
+			// On error
+			if (loopUid < 0) {
+				toggleMusicBtn.removeClass('music-on');
+				toggleMusicBtn.addClass('music-off');
+				toggleMusicTitle.title = 'Enable music';
+				musicPlaying = false;
+			}
+		}		
+		//console.log('Uid: ' + loopUid + ', music: ' + musicPlaying);
+
 		
 		/**
 		 * Start game on left mouse click.
@@ -889,6 +935,31 @@ var App = function() {
 		wade.clearScene();
 		wade.app.init();
 	};
+
+	
+	/**
+	 * Toogle background music
+	 */
+	this.toggleMusic = function() {
+		if (musicPlaying) {
+			if (loopUid > -1) {
+				wade.stopAudio(loopUid);
+			}
+			toggleMusicBtn.removeClass('music-on');
+			toggleMusicBtn.addClass('music-off');
+			toggleMusicTitle.title = 'Enable music';
+		} else {
+			loopUid = wade.playAudio(sounds.loop, true);
+			toggleMusicBtn.removeClass('music-off');
+			toggleMusicBtn.addClass('music-on');
+			toggleMusicTitle.title = 'Disable music';
+		}
+		
+		musicPlaying = !musicPlaying;
+		var shooterData = { music: musicPlaying };
+		wade.storeLocalObject('music', shooterData);
+		setCookie('music', musicPlaying, 365);
+	}
 };
 
 

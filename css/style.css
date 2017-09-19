@@ -71,7 +71,7 @@ canvas, #game {
 }
 
 .fa {
-	color: #333;
+	color: #555;
 	cursor: pointer;
 	font-size:2em;
 }
@@ -85,4 +85,12 @@ canvas, #game {
 .game-icons > .game-icon {
 	float:right;
 	margin-left:1em;
+}
+
+.music-on {
+	color: #555;
+}
+
+.music-off {
+	color: #333;
 }
