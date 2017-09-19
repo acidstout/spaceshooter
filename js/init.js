@@ -1,51 +1,6 @@
 var debug = false;
 
 /**
- * Checks if fullscreen mode is not yet active and tries to switch to fullscreen.
- * 
- * @param e
- * @returns false
- */
-function launchFullscreen(e) {
-	// Get fullscreen element
-	document.fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-
-	if (typeof(document.fullscreenElement) == 'undefined') {
-		// Switch to fullscreen.
-		if (e.requestFullscreen) {
-			e.requestFullscreen();
-		} else if (e.mozRequestFullScreen) {
-			e.mozRequestFullScreen();
-		} else if (e.webkitRequestFullscreen) {
-			e.webkitRequestFullscreen();
-		} else if (e.msRequestFullscreen) {
-			e.msRequestFullscreen();
-		}
-	}
-	
-	return false;
-}
-
-
-/**
- * Exits fullscreen mode.
- *  
- * @returns false
- */
-function exitFullscreen() {
-	if (document.exitFullscreen) {
-		document.exitFullscreen();
-	} else if (document.mozCancelFullScreen) {
-		document.mozCancelFullScreen();
-	} else if (document.webkitExitFullscreen) {
-		document.webkitExitFullscreen();
-	}
-	
-	return false;
-}
-
-
-/**
  * Toggle between fullscreen and windowed mode.
  * 
  * @param e
