@@ -81,7 +81,7 @@ $(function() {
 	}
 
 	// Initialize parallax starfield.
-	$('#starfield').starscroll(16, 4, 25, 4, 5, [ 96, 255, 255 ], true, true, 3);
+	$('#starfield').starscroll(16, 4, 25, 4, 5, [ 96, 255, 255 ], true, true, 3, true);
 	
 	// Initialize WADE game engine.
 	wade.init(gamefile + 'js', {}, { container : 'game'});

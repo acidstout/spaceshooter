@@ -7,7 +7,7 @@
  *
  */
 
-// Cheater? ;)
+var version = '1.0';
 var cheat = false;
 //cheat = true;
 
@@ -19,9 +19,11 @@ var isMobileDevice = isMobileDevice();
 // Correct position of top row icons for mobile devices.
 if (isMobileDevice) {
 	console.log('Detected mobile device.');
-	$('.game-icons').css({ 'top' : '2em' });
+	$('.game-icons').css({ 'top' : '3em' });
 }
 
+
+$('#version').text(version);
 
 /**
  * Main function of app
@@ -235,35 +237,35 @@ var App = function() {
 
 		
 		// Set screen size to current size of viewport.
-		// TODO: testing
+		wade.setMinScreenSize($(window).width(), $(window).height());
+		wade.setMaxScreenSize($(window).width(), $(window).height());
 		wade.setResolutionFactor(1);
 		
-		//wade.setMinScreenSize($(window).width(), $(window).height());
-		//wade.setMaxScreenSize($(window).width(), $(window).height());
-
-		wade.setMinScreenSize(1920, 1080);
-		wade.setMaxScreenSize(1920, 1080);
+		if (isMobileDevice) {
+			wade.setMinScreenSize($(window).width() * 3, $(window).height() * 3);
+			wade.setMaxScreenSize($(window).width() * 3, $(window).height() * 3);
+			wade.setResolutionFactor(0.5);
+			//wade.setMinScreenSize(wade.getMaxScreenWidth(), wade.getMaxScreenHeight());
+			//wade.setMaxScreenSize(wade.getMaxScreenWidth(), wade.getMaxScreenHeight());
+		}
 
 		// Get default renderer.
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
 		
-		var minSize = wade.getMinScreenWidth();
-		minSize += 'x' + wade.getMinScreenHeight(); 
-		var maxSize = wade.getMaxScreenWidth();
-		maxSize += 'x' +  wade.getMaxScreenHeight();
-		
 		// Log statistics into file.
-		log(
-			'screen size: '
-			+ $(window).width() +'x' + $(window).height()
-			+ ', actual min/max screen sizes: '
-			+ minSize
-			+ ' / '
-			+ maxSize
-			+ ', render-mode: ' + defaultRenderer
-			+ ', force2d: ' + force2d
-		);
-		
+		if (debug) {
+			log(
+				'browser screen size: '
+				+ $(window).width() +'x' + $(window).height()
+				+ ', actual min screen size: '
+				+ wade.getMinScreenWidth() + 'x' + wade.getMinScreenHeight()
+				+ ', actual max screen size: '
+				+ wade.getMaxScreenWidth() + 'x' +  wade.getMaxScreenHeight()
+				+ ', render-mode: ' + defaultRenderer
+				+ ', force2d: ' + force2d
+				+ ', isMobile: ' + isMobileDevice
+			);
+		}		
 		
 		// Load highscore.
 		var shooterData = wade.retrieveLocalObject('shooterData');
