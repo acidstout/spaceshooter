@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.0';
+var version = '1.0.1';
 var cheat = false;
 //cheat = true;
 
@@ -71,24 +71,27 @@ var App = function() {
 		// Animated explosions (file, animation speed, number of tiles per x/y-axis).
 		boom : {
 			0 : {
-					file: '../img/animations/explode_4x4_ship.png',
+					file: '../img/animations/explosion/explode_4x4_ship.png',
 					speed: 30,
 					x: 4,
 					y: 4
 				},
 			1: {
-					file: '../img/animations/explode_4x4_ring.png',
+					file: '../img/animations/explosion/explode_4x4_ring.png',
 					speed: 30,
 					x: 4,
 					y: 4
 				},
 			2 : {
-					file: '../img/animations/explode_5x3_enemy.png',
+					file: '../img/animations/explosion/explode_5x3_enemy.png',
 					speed: 30,
 					x: 5,
 					y: 3
 				}
 		},
+		
+		fly_left     : '../img/animations/ship/fly_left.png',
+		fly_right    : '../img/animations/ship/fly_right.png',
 		
 		// Bullets
 		shipBullet   : '../img/bullets/bullet_ship.png',
@@ -179,6 +182,10 @@ var App = function() {
 		for (var i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
+		
+		// Fly left/right lean animation
+		wade.loadImage(images.fly_left);
+		wade.loadImage(images.fly_right);
 
 		// Top row icons
 		wade.loadImage(images.healthIcon);
@@ -429,7 +436,6 @@ var App = function() {
 		var mousePosition = wade.getMousePosition();
 		ship = new SceneObject(sprite, 0, mousePosition.x, mousePosition.y);
 		wade.addSceneObject(ship);
-
 		
 		/**
 		 * Function to handle player shooting.
@@ -757,7 +763,9 @@ var App = function() {
 				wade.removeSceneObject(pauseSpriteObj);
 				wade.resumeSimulation();
 				wade.app.onMouseMove = function(eventData) {
-					ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+					if (typeof(ship) != 'undefined') {
+						handleMouseMove(ship, images, eventData);
+					}
 				};
 			}
 		}
@@ -767,10 +775,12 @@ var App = function() {
 	
 	
 	/**
-	 * Move ship according to mouse move.
+	 * Move and animate ship according to mouse move.
 	 */
 	this.onMouseMove = function(eventData) {
-		ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+		if (typeof(ship) != 'undefined') {
+			handleMouseMove(ship, images, eventData);
+		}
 	};
 
 	
@@ -1023,4 +1033,51 @@ function padStrings(obj) {
 		tmp = padding + obj + padding;
 	}
 	return tmp;
+}
+
+
+/**
+ * Handle mouse move and animation of ship.
+ * 
+ * @param eventData
+ */
+function handleMouseMove(ship, images, eventData) {
+	// Get position and sprite of ship.
+	var shipPosition = ship.getPosition();
+	var sprite = ship.getSprite();
+	var animation = null;
+	
+	//console.log(shipPosition.x + ' -> ' + eventData.screenPosition.x);
+	
+	// Decide direction of animation
+	if (shipPosition.x < 0) {
+		if (shipPosition.x > eventData.screenPosition.x) {
+			//console.log('left');
+			animation = new Animation(images.fly_left, 5, 1, 30);
+		} else if (shipPosition.x < eventData.screenPosition.x) {
+			//console.log('right');
+			animation = new Animation(images.fly_right, 5, 1, 30);
+		}
+	} else if (shipPosition.x > 0) {
+		if (shipPosition.x < eventData.screenPosition.x) {
+			//console.log('right');
+			animation = new Animation(images.fly_right, 5, 1, 30);
+		} else if (shipPosition.x > eventData.screenPosition.x) {
+			//console.log('left');
+			animation = new Animation(images.fly_left, 5, 1, 30);
+		}
+	}			
+
+	// Animate ship
+	if (animation != null) {
+		sprite.addAnimation('fly', animation);
+		ship.playAnimation('fly');
+	
+		ship.onAnimationEnd = function() {
+			sprite.setImageFile(images.ship);
+		}
+	}
+	
+	// Finally move ship to new position.
+	ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
 }
