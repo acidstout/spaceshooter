@@ -29,3 +29,5 @@
 - updated asteroids and enemies (images, health, strength, fire rate, ...)
 - added background music and option to toggle it on/off
 - increased brightness of toggle icons
+- mobile device optimizations
+- animated ship when moving left/right

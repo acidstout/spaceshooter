@@ -7,8 +7,23 @@
  *
  */
 
+var version = '1.0.1';
 var cheat = false;
 //cheat = true;
+
+
+// Check if mobile device is used.
+var isMobileDevice = isMobileDevice();
+
+
+// Correct position of top row icons for mobile devices.
+if (isMobileDevice) {
+	console.log('Detected mobile device.');
+	$('.game-icons').css({ 'top' : '3em' });
+}
+
+
+$('#version').text(version);
 
 /**
  * Main function of app
@@ -56,24 +71,27 @@ var App = function() {
 		// Animated explosions (file, animation speed, number of tiles per x/y-axis).
 		boom : {
 			0 : {
-					file: '../img/animations/explode_4x4_ship.png',
+					file: '../img/animations/explosion/explode_4x4_ship.png',
 					speed: 30,
 					x: 4,
 					y: 4
 				},
 			1: {
-					file: '../img/animations/explode_4x4_ring.png',
+					file: '../img/animations/explosion/explode_4x4_ring.png',
 					speed: 30,
 					x: 4,
 					y: 4
 				},
 			2 : {
-					file: '../img/animations/explode_5x3_enemy.png',
+					file: '../img/animations/explosion/explode_5x3_enemy.png',
 					speed: 30,
 					x: 5,
 					y: 3
 				}
 		},
+		
+		fly_left     : '../img/animations/ship/fly_left.png',
+		fly_right    : '../img/animations/ship/fly_right.png',
 		
 		// Bullets
 		shipBullet   : '../img/bullets/bullet_ship.png',
@@ -164,6 +182,10 @@ var App = function() {
 		for (var i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
+		
+		// Fly left/right lean animation
+		wade.loadImage(images.fly_left);
+		wade.loadImage(images.fly_right);
 
 		// Top row icons
 		wade.loadImage(images.healthIcon);
@@ -222,17 +244,35 @@ var App = function() {
 
 		
 		// Set screen size to current size of viewport.
-		// TODO: testing
-		wade.setResolutionFactor(1);
-		
 		wade.setMinScreenSize($(window).width(), $(window).height());
 		wade.setMaxScreenSize($(window).width(), $(window).height());
-		//console.log('Layer render mode: ' + wade.getLayerRenderMode(defaultLayerId) + '\nforce2d: ' + force2d + '\nScreen size set to: ' + $(window).width() + 'x' + $(window).height());
-
+		wade.setResolutionFactor(1);
 		
+		if (isMobileDevice) {
+			wade.setMinScreenSize($(window).width() * 3, $(window).height() * 3);
+			wade.setMaxScreenSize($(window).width() * 3, $(window).height() * 3);
+			wade.setResolutionFactor(0.5);
+			//wade.setMinScreenSize(wade.getMaxScreenWidth(), wade.getMaxScreenHeight());
+			//wade.setMaxScreenSize(wade.getMaxScreenWidth(), wade.getMaxScreenHeight());
+		}
+
 		// Get default renderer.
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
 		
+		// Log statistics into file.
+		if (debug) {
+			log(
+				'browser screen size: '
+				+ $(window).width() +'x' + $(window).height()
+				+ ', actual min screen size: '
+				+ wade.getMinScreenWidth() + 'x' + wade.getMinScreenHeight()
+				+ ', actual max screen size: '
+				+ wade.getMaxScreenWidth() + 'x' +  wade.getMaxScreenHeight()
+				+ ', render-mode: ' + defaultRenderer
+				+ ', force2d: ' + force2d
+				+ ', isMobile: ' + isMobileDevice
+			);
+		}		
 		
 		// Load highscore.
 		var shooterData = wade.retrieveLocalObject('shooterData');
@@ -373,7 +413,7 @@ var App = function() {
 		 * Start game on left mouse click.
 		 */
 		wade.app.onMouseDown = function() {
-			if (wade.isMouseDown('0')) {
+			if (wade.isMouseDown(0) || (wade.isMouseDown() && isMobileDevice)) {
 				// Hide close button and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				game.style.cursor = 'none';
@@ -396,7 +436,6 @@ var App = function() {
 		var mousePosition = wade.getMousePosition();
 		ship = new SceneObject(sprite, 0, mousePosition.x, mousePosition.y);
 		wade.addSceneObject(ship);
-
 		
 		/**
 		 * Function to handle player shooting.
@@ -408,14 +447,14 @@ var App = function() {
 			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
 		
 			// Turbo fire!
-			if (wade.isMouseDown('2') && cheat) {
+			if (wade.isMouseDown(2) && cheat) {
 				fireRateTemp = 50;
 			}
 
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
 			var time = wade.getAppTime();
 			
-			if ((wade.isMouseDown('0') || wade.isMouseDown('2')) && time >= nextFireTime) {
+			if ((wade.isMouseDown(0) || wade.isMouseDown(2) || (wade.isMouseDown() && isMobileDevice)) && time >= nextFireTime) {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
@@ -724,7 +763,9 @@ var App = function() {
 				wade.removeSceneObject(pauseSpriteObj);
 				wade.resumeSimulation();
 				wade.app.onMouseMove = function(eventData) {
-					ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+					if (typeof(ship) != 'undefined') {
+						handleMouseMove(ship, images, eventData);
+					}
 				};
 			}
 		}
@@ -734,10 +775,12 @@ var App = function() {
 	
 	
 	/**
-	 * Move ship according to mouse move.
+	 * Move and animate ship according to mouse move.
 	 */
 	this.onMouseMove = function(eventData) {
-		ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+		if (typeof(ship) != 'undefined') {
+			handleMouseMove(ship, images, eventData);
+		}
 	};
 
 	
@@ -990,4 +1033,51 @@ function padStrings(obj) {
 		tmp = padding + obj + padding;
 	}
 	return tmp;
+}
+
+
+/**
+ * Handle mouse move and animation of ship.
+ * 
+ * @param eventData
+ */
+function handleMouseMove(ship, images, eventData) {
+	// Get position and sprite of ship.
+	var shipPosition = ship.getPosition();
+	var sprite = ship.getSprite();
+	var animation = null;
+	
+	//console.log(shipPosition.x + ' -> ' + eventData.screenPosition.x);
+	
+	// Decide direction of animation
+	if (shipPosition.x < 0) {
+		if (shipPosition.x > eventData.screenPosition.x) {
+			//console.log('left');
+			animation = new Animation(images.fly_left, 5, 1, 30);
+		} else if (shipPosition.x < eventData.screenPosition.x) {
+			//console.log('right');
+			animation = new Animation(images.fly_right, 5, 1, 30);
+		}
+	} else if (shipPosition.x > 0) {
+		if (shipPosition.x < eventData.screenPosition.x) {
+			//console.log('right');
+			animation = new Animation(images.fly_right, 5, 1, 30);
+		} else if (shipPosition.x > eventData.screenPosition.x) {
+			//console.log('left');
+			animation = new Animation(images.fly_left, 5, 1, 30);
+		}
+	}			
+
+	// Animate ship
+	if (animation != null) {
+		sprite.addAnimation('fly', animation);
+		ship.playAnimation('fly');
+	
+		ship.onAnimationEnd = function() {
+			sprite.setImageFile(images.ship);
+		}
+	}
+	
+	// Finally move ship to new position.
+	ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
 }
