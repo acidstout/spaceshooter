@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.0.1';
+var version = '1.0.2';
 var cheat = false;
 //cheat = true;
 
@@ -164,6 +164,9 @@ var App = function() {
 	var toggleMusicTitle       = document.getElementById('toggleMusicTitle');
 	var toggleMusicBtn         = $('#toggleMusicBtn');
 
+	wade.setLoadingBar(true, {x: 0 , y: 0 }, '#333333', '#222222');
+	wade.setLoadingImages('../img/loading.svg');
+	
 	/**
 	 * Load images and sounds. Also set screen size.
 	 */
