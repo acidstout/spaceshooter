@@ -31,3 +31,7 @@
 - increased brightness of toggle icons
 - mobile device optimizations
 - animated ship when moving left/right
+- fixed issue with background music being played twice
+- fixed issue with level not being increased when reaching the first 1000 points
+- fixed issue with fire rate and damage not being reset upon game over
+- added screenshots
