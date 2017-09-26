@@ -6,14 +6,13 @@
  *	@author nrekow
  *
  */
-/* jshint -W014 */
 
-var version = '1.0.3';
-var cheat = false;
+const version = '1.0.3';
+const cheat = false;
 //cheat = true;
 
 // Check if mobile device is used.
-var isMobileDevice = isMobileDevice();
+const isMobileDevice = checkForMobileDevice();
 
 // Correct position of top row icons for mobile devices.
 if (isMobileDevice) {
@@ -29,6 +28,8 @@ $('#version').text(version);
  *
  */
 var App = function() {
+	'use strict';
+	
 	var ship;										// Player's ship.
 	var gamePaused     = false;						// Game paused.
 	var gameStarted    = false;						// Game started.
@@ -63,7 +64,7 @@ var App = function() {
 	var loopUid        = null;						// Uid of the background music. Used to start/stop it.
 	var musicPlaying   = false;						// Status of background music
 	
-	var images = {
+	const images = {
 		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
 
@@ -151,7 +152,7 @@ var App = function() {
 		scoreIcon   : '../img/icons/trophy.png'
 	};
 	
-	var sounds = {
+	const sounds = {
 		shoot       : '../sounds/shoot.mp3',
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
@@ -170,21 +171,18 @@ var App = function() {
 	 * Load images and sounds. Also set screen size.
 	 */
 	this.load = function() {
-		// Counter
-		var i;
-
 		// Images
 		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
 		
 		// Bullets
 		wade.loadImage(images.shipBullet);
-		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
+		for (var i = 0; i < Object.keys(images.enemyBullets).length; i++) {
 			wade.loadImage(images.enemyBullets[i].file);
 		}
 		
 		// Animation
-		for (i = 0; i < Object.keys(images.boom).length; i++) {
+		for (var i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
 		
@@ -198,12 +196,12 @@ var App = function() {
 		wade.loadImage(images.scoreIcon);
 		
 		// Enemies
-		for (i = 0; i < Object.keys(images.enemies).length; i++) {
+		for (var i = 0; i < Object.keys(images.enemies).length; i++) {
 			wade.loadImage(images.enemies[i]);
 		}
 		
 		// Asteroids
-		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
+		for (var i = 0; i < Object.keys(images.asteroids).length; i++) {
 			wade.loadImage(images.asteroids[i]);
 		}
 
@@ -296,7 +294,7 @@ var App = function() {
 		var cookieHighscoreName = 'overkill_highscore';
 		var cookieHighscore = getCookie(cookieHighscoreName);
 		
-		if (typeof(cookieHighscore) != 'undefined' && cookieHighscore != null) {
+		if (typeof(cookieHighscore) != 'undefined' && cookieHighscore !== null) {
 			if (cookieHighscore > oldHighScore) {
 				oldHighScore = cookieHighscore;
 			}
@@ -392,7 +390,7 @@ var App = function() {
 		
 		// Show close button and default cursor while not playing.
 		gameBtnObj.style.display = 'block';
-		game.style.cursor = 'default';
+		gameObj.style.cursor = 'default';
 		
 		
 		// Show main menu.
@@ -405,7 +403,7 @@ var App = function() {
 		
 		// Decide whether to play music or not.
 		if (wade.isWebAudioSupported()) {
-			if (musicPlaying && loopUid == null) {
+			if (musicPlaying && loopUid === null) {
 				loopUid = wade.playAudio(sounds.loop, true);
 				
 				// On error
@@ -427,7 +425,7 @@ var App = function() {
 			if (wade.isMouseDown(0) || (wade.isMouseDown() && isMobileDevice)) {
 				// Hide close button and cursor while playing.
 				gameBtnObj.style.display = 'none';
-				game.style.cursor = 'none';
+				gameObj.style.cursor = 'none';
 
 				clearTimeout(nextAsteroid);
 				wade.removeSceneObject(clickToStart);
@@ -731,7 +729,7 @@ var App = function() {
 			clearTimeout(nextAsteroid);
 			wade.app.onMouseMove = null;
 			wade.addSceneObject(pauseSpriteObj);
-			game.style.cursor = 'default';
+			gameObj.style.cursor = 'default';
 		} else {
 			// Don't spawn asteroids on main screen if window has no focus.
 			if (!gameStarted) {
@@ -768,10 +766,10 @@ var App = function() {
 				clearTimeout(nextAsteroid);
 				wade.app.onMouseMove = null;
 				wade.addSceneObject(pauseSpriteObj);
-				game.style.cursor = 'default';
+				gameObj.style.cursor = 'default';
 			} else {
 				//console.log('Game resumed by user.');
-				game.style.cursor = 'none';
+				gameObj.style.cursor = 'none';
 				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 				wade.removeSceneObject(pauseSpriteObj);
@@ -803,7 +801,7 @@ var App = function() {
 	 */
 	this.explosion = function(position, i) {
 		// Fallback
-		if (typeof(i) == 'undefined' || i == null || typeof(images.boom[i]) == 'undefined') {
+		if (typeof(i) == 'undefined' || i === null || typeof(images.boom[i]) == 'undefined') {
 			i = 0;
 		}
 		
@@ -1099,7 +1097,7 @@ function handleMouseMove(ship, images, eventData) {
 	}			
 
 	// Animate ship
-	if (animation != null) {
+	if (animation !== null) {
 		sprite.addAnimation('fly', animation);
 		ship.playAnimation('fly');
 	
