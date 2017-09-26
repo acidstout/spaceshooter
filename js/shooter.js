@@ -6,15 +6,14 @@
  *	@author nrekow
  *
  */
+/* jshint -W014 */
 
-var version = '1.0.1';
+var version = '1.0.3';
 var cheat = false;
 //cheat = true;
 
-
 // Check if mobile device is used.
 var isMobileDevice = isMobileDevice();
-
 
 // Correct position of top row icons for mobile devices.
 if (isMobileDevice) {
@@ -150,36 +149,42 @@ var App = function() {
 		healthIcon  : '../img/icons/heart.png',
 		levelIcon   : '../img/icons/star.png',
 		scoreIcon   : '../img/icons/trophy.png'
-	}
+	};
 	
 	var sounds = {
 		shoot       : '../sounds/shoot.mp3',
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
 		loop        : '../sounds/loop.mp3'
-	}
+	};
 	
 	var toggleRendererTitle    = document.getElementById('toggleRendererTitle');
 	var toggleRendererBtn      = $('#toggleRendererBtn');
 	var toggleMusicTitle       = document.getElementById('toggleMusicTitle');
 	var toggleMusicBtn         = $('#toggleMusicBtn');
 
+	wade.setLoadingBar(true, {x: 0 , y: 0 }, '#333333', '#222222');
+	wade.setLoadingImages('../img/loading.svg');
+	
 	/**
 	 * Load images and sounds. Also set screen size.
 	 */
 	this.load = function() {
+		// Counter
+		var i;
+
 		// Images
 		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
 		
 		// Bullets
 		wade.loadImage(images.shipBullet);
-		for (var i = 0; i < Object.keys(images.enemyBullets).length; i++) {
+		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
 			wade.loadImage(images.enemyBullets[i].file);
 		}
 		
 		// Animation
-		for (var i = 0; i < Object.keys(images.boom).length; i++) {
+		for (i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
 		
@@ -193,12 +198,12 @@ var App = function() {
 		wade.loadImage(images.scoreIcon);
 		
 		// Enemies
-		for (var i = 0; i < Object.keys(images.enemies).length; i++) {
+		for (i = 0; i < Object.keys(images.enemies).length; i++) {
 			wade.loadImage(images.enemies[i]);
 		}
 		
 		// Asteroids
-		for (var i = 0; i < Object.keys(images.asteroids).length; i++) {
+		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
 			wade.loadImage(images.asteroids[i]);
 		}
 
@@ -233,15 +238,19 @@ var App = function() {
 
 		
 		// Check whether to play background music.
-		var musicPlayingData = wade.retrieveLocalObject('music');
-		musicPlaying = (musicPlayingData && musicPlayingData.music) || musicPlaying;
-		musicPlaying = (getCookie('music') == 'true') || musicPlaying;
-		if (musicPlaying) {
-			toggleMusicBtn.removeClass('music-off');
-			toggleMusicBtn.addClass('music-on');
-			toggleMusicTitle.title = 'Disable music';
+		if (wade.isWebAudioSupported()) {
+			var musicPlayingData = wade.retrieveLocalObject('music');
+			musicPlaying = (musicPlayingData && musicPlayingData.music) || musicPlaying;
+			musicPlaying = (getCookie('music') == 'true') || musicPlaying;
+			if (musicPlaying) {
+				toggleMusicBtn.removeClass('music-off');
+				toggleMusicBtn.addClass('music-on');
+				toggleMusicTitle.title = 'Disable music';
+			}
+		} else {
+			// Just in case ... ;)
+			musicPlaying = false;
 		}
-
 		
 		// Set screen size to current size of viewport.
 		wade.setMinScreenSize($(window).width(), $(window).height());
@@ -303,7 +312,7 @@ var App = function() {
 				insertCoin  : '- INSERT COIN -',
 				highscoreIs : 'HIGHSCORE IS %i POINTS',
 				youScored   : 'YOU %s %i POINTS'
-		}
+		};
 		
 		
 		// Ugly workaround for cut-off texts when using WebGL.
@@ -395,17 +404,19 @@ var App = function() {
 		
 		
 		// Decide whether to play music or not.
-		if (musicPlaying) {
-			loopUid = wade.playAudio(sounds.loop, true);
-			
-			// On error
-			if (loopUid < 0) {
-				toggleMusicBtn.removeClass('music-on');
-				toggleMusicBtn.addClass('music-off');
-				toggleMusicTitle.title = 'Enable music';
-				musicPlaying = false;
+		if (wade.isWebAudioSupported()) {
+			if (musicPlaying && loopUid == null) {
+				loopUid = wade.playAudio(sounds.loop, true);
+				
+				// On error
+				if (loopUid < 0) {
+					toggleMusicBtn.removeClass('music-on');
+					toggleMusicBtn.addClass('music-off');
+					toggleMusicTitle.title = 'Enable music';
+					musicPlaying = false;
+				}
 			}
-		}		
+		}
 		//console.log('Uid: ' + loopUid + ', music: ' + musicPlaying);
 
 		
@@ -528,7 +539,7 @@ var App = function() {
 			}
 
 			// Increase level and health every 1000 points.
-			if (Math.floor(score / 1000) > level && level < 5) {
+			if (Math.floor(score / 1000) > level -1 && level < 5) {
 				level += 1;
 				if (!cheat) {
 					playerHealth = 100;
@@ -664,8 +675,11 @@ var App = function() {
 				playerHealth = 100;
 			}
 			
+			// Reset values to defaults. Otherwise you were able to continue the game where you got killed.
 			score = 0;
 			level = 1;
+			fireRate = 4;
+			fireDamage = 200;
 			gameStarted = true;
 		}
 		
@@ -779,7 +793,7 @@ var App = function() {
 	 */
 	this.onMouseMove = function(eventData) {
 		if (typeof(ship) != 'undefined') {
-			handleMouseMove(ship, images, eventData);
+			return handleMouseMove(ship, images, eventData);
 		}
 	};
 
@@ -984,25 +998,39 @@ var App = function() {
 	 * Toogle background music
 	 */
 	this.toggleMusic = function() {
-		if (musicPlaying) {
-			if (loopUid > -1) {
-				wade.stopAudio(loopUid);
+		if (wade.isWebAudioSupported()) {
+			if (musicPlaying) {
+				if (loopUid > -1) {
+					wade.stopAudio(loopUid);
+				} else {
+					// Fallback if no uid is available for whatever reason.
+					wade.stopAudio();
+				}
+				musicPlaying = false;
+				toggleMusicBtn.removeClass('music-on');
+				toggleMusicBtn.addClass('music-off');
+				toggleMusicTitle.title = 'Enable music';
+			} else {
+				// Fallback if no uid is available for whatever reason.
+				if (loopUid > -1) {
+					wade.stopAudio(loopUid);
+				} else {
+					// Fallback if no uid is available for whatever reason.
+					wade.stopAudio();
+				}
+
+				loopUid = wade.playAudio(sounds.loop, true);
+				musicPlaying = true;
+				toggleMusicBtn.removeClass('music-off');
+				toggleMusicBtn.addClass('music-on');
+				toggleMusicTitle.title = 'Disable music';
 			}
-			toggleMusicBtn.removeClass('music-on');
-			toggleMusicBtn.addClass('music-off');
-			toggleMusicTitle.title = 'Enable music';
-		} else {
-			loopUid = wade.playAudio(sounds.loop, true);
-			toggleMusicBtn.removeClass('music-off');
-			toggleMusicBtn.addClass('music-on');
-			toggleMusicTitle.title = 'Disable music';
+			
+			var shooterData = { music: musicPlaying };
+			wade.storeLocalObject('music', shooterData);
+			setCookie('music', musicPlaying, 365);
 		}
-		
-		musicPlaying = !musicPlaying;
-		var shooterData = { music: musicPlaying };
-		wade.storeLocalObject('music', shooterData);
-		setCookie('music', musicPlaying, 365);
-	}
+	};
 };
 
 
@@ -1024,8 +1052,10 @@ function getRandomInt(min, max) {
  */
 function padStrings(obj) {
 	var padding = '       ';
+	var tmp;
+	
 	if (typeof(obj) == 'object') {
-		var tmp = {};
+		tmp = {};
 		for (var i in obj) {
 			tmp[i] = padding + obj[i] + padding;
 		}
@@ -1075,9 +1105,9 @@ function handleMouseMove(ship, images, eventData) {
 	
 		ship.onAnimationEnd = function() {
 			sprite.setImageFile(images.ship);
-		}
+		};
 	}
 	
 	// Finally move ship to new position.
-	ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+	return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
 }
