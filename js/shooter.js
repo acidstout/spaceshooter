@@ -7,21 +7,11 @@
  *
  */
 
-const version = '1.0.3';
-const cheat = false;
-//cheat = true;
-
-// Check if mobile device is used.
-const isMobileDevice = checkForMobileDevice();
-
-// Correct position of top row icons for mobile devices.
-if (isMobileDevice) {
-	console.log('Detected mobile device.');
-	$('.game-icons').css({ 'top' : '3em' });
-}
-
-
+const version = '1.0.4';
 $('#version').text(version);
+
+// Disable cheat-mode by default.
+var cheat = false;
 
 /**
  * Main function of app
@@ -29,7 +19,7 @@ $('#version').text(version);
  */
 var App = function() {
 	'use strict';
-	
+	var isMobileDevice = isMobileDevice || false;
 	var ship;										// Player's ship.
 	var gamePaused     = false;						// Game paused.
 	var gameStarted    = false;						// Game started.
@@ -56,6 +46,10 @@ var App = function() {
 	var scoreCounter;								// An object to display the score.
 	var score          = 0;							// Current score.
 	
+	var dataNames    = {
+		data      : 'overkill',
+	};
+
 	var healthCounter;								// Object to display the health.
 	var playerHealth   = 100;						// Initial health of player's ship.
 	
@@ -63,6 +57,12 @@ var App = function() {
 	var level          = 1;							// Initial level.
 	var loopUid        = null;						// Uid of the background music. Used to start/stop it.
 	var musicPlaying   = false;						// Status of background music
+	
+	// Retrieve game data.
+	var gameData       = wade.retrieveLocalObject(dataNames.data);
+
+	// Get highscores.
+	var oldHighScore   = (gameData && gameData.highscore) || 0;
 	
 	const images = {
 		logo		: '../img/logo.png',
@@ -163,7 +163,11 @@ var App = function() {
 	var toggleRendererBtn      = $('#toggleRendererBtn');
 	var toggleMusicTitle       = document.getElementById('toggleMusicTitle');
 	var toggleMusicBtn         = $('#toggleMusicBtn');
-
+	var gameObj                = document.getElementById('game');
+	var gameBtnObj             = document.getElementById('game-icons');
+	
+	// Prevent the game to be run in an iframe.
+	wade.preventIframe();
 	wade.setLoadingBar(true, {x: 0 , y: 0 }, '#333333', '#222222');
 	wade.setLoadingImages('../img/loading.svg');
 	
@@ -217,10 +221,11 @@ var App = function() {
 	 * Initialize game.
 	 */
 	this.init = function() {
+		// Reload game data. This is required after game over.
+		gameData  = wade.retrieveLocalObject(dataNames.data);
+
 		// Set layer render mode to either WebGL or 2D canvas.
-		var force2dData = wade.retrieveLocalObject('force2d');
-		force2d = (force2dData && force2dData.force2d) || force2d;
-		force2d = (getCookie('force2d') == 'true') || force2d;
+		force2d = (gameData && gameData.force2d) || force2d;
 
 		if (force2d) {
 			wade.setLayerRenderMode(defaultLayerId, '2d');
@@ -237,9 +242,7 @@ var App = function() {
 		
 		// Check whether to play background music.
 		if (wade.isWebAudioSupported()) {
-			var musicPlayingData = wade.retrieveLocalObject('music');
-			musicPlaying = (musicPlayingData && musicPlayingData.music) || musicPlaying;
-			musicPlaying = (getCookie('music') == 'true') || musicPlaying;
+			musicPlaying = (gameData && gameData.music) || musicPlaying;
 			if (musicPlaying) {
 				toggleMusicBtn.removeClass('music-off');
 				toggleMusicBtn.addClass('music-on');
@@ -269,47 +272,30 @@ var App = function() {
 		// Log statistics into file.
 		if (debug) {
 			log(
-				'browser screen size: '
+				  '\n\t\tbrowser screen size   : '
 				+ $(window).width() +'x' + $(window).height()
-				+ ', actual min screen size: '
+				+ '\n\t\tactual min screen size: '
 				+ wade.getMinScreenWidth() + 'x' + wade.getMinScreenHeight()
-				+ ', actual max screen size: '
+				+ '\n\t\tactual max screen size: '
 				+ wade.getMaxScreenWidth() + 'x' +  wade.getMaxScreenHeight()
-				+ ', render-mode: ' + defaultRenderer
-				+ ', force2d: ' + force2d
-				+ ', isMobile: ' + isMobileDevice
+				+ '\n\t\trender-mode           : ' + defaultRenderer
+				+ '\n\t\tforce2D               : ' + force2d
+				+ '\n\t\tisMobile              : ' + isMobileDevice
+				+ '\n\t\tisCheater             : ' + cheat
+				+ '\n\t\tcurrent score         : ' + score
+				+ '\n\t\thighscore             : ' + oldHighScore
+				+ '\n\t\tlevel                 : ' + level
+				+ '\n\t\tplayer health         : ' + playerHealth
+				+ '\n\t\tfire rate             : ' + fireRate
+				+ '\n\t\tfire damage           : ' + fireDamage
 			);
 		}		
 		
-		// Load highscore.
-		var shooterData = wade.retrieveLocalObject('shooterData');
-		var oldHighScore = (shooterData && shooterData.oldHighScore) || 0;
-		var newHighScore = (shooterData && shooterData.newHighScore) || 0;
-		var gameObj = document.getElementById('game');
-		var gameBtnObj = document.getElementById('game-icons');
-		var highScore = oldHighScore;
-		
-		
-		// Check for highscore cookie.
-		var cookieHighscoreName = 'overkill_highscore';
-		var cookieHighscore = getCookie(cookieHighscoreName);
-		
-		if (typeof(cookieHighscore) != 'undefined' && cookieHighscore !== null) {
-			if (cookieHighscore > oldHighScore) {
-				oldHighScore = cookieHighscore;
-			}
-		}
-
-		if (newHighScore > oldHighScore) {
-			highScore = newHighScore;
-		}
-		
-		
 		// Main screen text.
 		var menuTexts = {
-				insertCoin  : '- INSERT COIN -',
-				highscoreIs : 'HIGHSCORE IS %i POINTS',
-				youScored   : 'YOU %s %i POINTS'
+			insertCoin  : '- INSERT COIN -',
+			highscoreIs : 'HIGHSCORE IS %i POINTS',
+			youScored   : 'YOU %s %i POINTS'
 		};
 		
 		
@@ -325,7 +311,12 @@ var App = function() {
 		var clickToStart = new SceneObject();
 		
 		clickToStart.addSprite(clickText, { y: 320 });
-		
+
+		if (score <= 0 || oldHighScore >= score) {
+			menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', oldHighScore);
+			clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
+		}
+
 		if (score > 0) {
 			var scoreVerb = 'SCORED';
 			if (cheat) {
@@ -340,9 +331,9 @@ var App = function() {
 
 			clickToStart.addSprite(new TextSprite(scoreMsg, '24pt Highspeed', 'white', 'center'), { y: 120 });
 
-			if (newHighScore > oldHighScore) {
+			if (score > oldHighScore) {
 				var highscoreMessage = 'NEW HIGHSCORE';
-				
+				oldHighScore = score;
 				if (cheat) {
 					highscoreMessage += ' NOT SAVED';
 				}
@@ -359,20 +350,11 @@ var App = function() {
 			}
 		}
 		
-		if (score <= 0 || oldHighScore >= newHighScore) {
-			menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', highScore);
-			clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
-		}
-
-		
 		// Store highscore only if player didn't cheat. 
 		if(!cheat) {
-			// Update highscore cookie.
-			setCookie(cookieHighscoreName, highScore, 365);
-	
 			// Update local store with highscore.
-			shooterData = { oldHighScore: highScore, newHighScore: newHighScore };
-			wade.storeLocalObject('shooterData', shooterData);
+			gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+			wade.storeLocalObject(dataNames.data, gameData);
 		}
 		
 		
@@ -415,7 +397,6 @@ var App = function() {
 				}
 			}
 		}
-		//console.log('Uid: ' + loopUid + ', music: ' + musicPlaying);
 
 		
 		/**
@@ -430,6 +411,7 @@ var App = function() {
 				clearTimeout(nextAsteroid);
 				wade.removeSceneObject(clickToStart);
 				wade.clearScene();
+				wade.removeUnusedLayers([ 1 ]);	// Remove all unused layers, but layer 1.
 				wade.app.startGame();
 				wade.app.onMouseDown = 0;
 			}
@@ -606,7 +588,6 @@ var App = function() {
 									enemyDamage = overlapping[i].damage || enemyDamage;
 								}
 
-								//console.log(enemyDamage);
 								hit = true;
 								break;
 							}
@@ -631,36 +612,46 @@ var App = function() {
 					playerHealth = 0;
 				}
 				healthCounter.getSprite().setText(playerHealth);
-				
-				// Check health.
-				if (playerHealth <= 0) {
-					// Create another explosion and play explode sound if player's health is zero or less.
-					wade.app.explosion(ship.getPosition(), 2);
-					wade.playAudio(sounds.explode, false);
-					
-					wade.removeSceneObject(ship);
-					wade.setMainLoop(null, 'fire');
-					wade.setMainLoop(null, 'die');
+			}
 
-					// Check high score
-					var shooterData = wade.retrieveLocalObject('shooterData');
-					var highScore = (shooterData && shooterData.oldHighScore) || 0;
+			// Always check player's health. Not only when hit. Fixes an issue where the ship disappeared, but the game continued.
+			if (playerHealth <= 0) {
+				// Create another explosion and play explode sound if player's health is zero or less.
+				var explosionAnimation = wade.app.explosion(ship.getPosition(), 2);
+				wade.playAudio(sounds.explode, false);
+				
+				wade.removeSceneObject(ship);
+				wade.setMainLoop(null, 'fire');
+				wade.setMainLoop(null, 'die');
+
+				// Check high score
+				if (!cheat && score > oldHighScore) {
+					gameData = {
+						force2d: force2d,
+						music: musicPlaying,
+						highscore: score
+					};
 					
-					if (score > highScore) {
-						shooterData = { oldHighScore: highScore, newHighScore: score };
-						wade.storeLocalObject('shooterData', shooterData);
-					}
-	
-					// Wait for the animation to finish ...
-					var gameOver = setTimeout(function() {
+					wade.storeLocalObject(dataNames.data, gameData);
+				}
+
+				// On player's death set an interval to check if the ship's explosion animation has finished playing.
+				var gameOverInterval = setInterval(function() {
+					// Wait for the animation to finish.
+					if (!explosionAnimation.isPlaying()) {
+						// Reset game state.
 						gameStarted = false;
+						
+						// Clear interval and timeouts.
+						clearInterval(gameOverInterval);
 						clearTimeout(nextEnemy);
 						clearTimeout(nextAsteroid);
-						// ... clear scene and initialize app on death.
+						
+						// Clear scene and initialize app.
 						wade.clearScene();
 						wade.app.init();
-					}, 250);
-				}
+					}
+				}, 100);
 			}
 		}, 'die');
 		
@@ -824,6 +815,8 @@ var App = function() {
 		explosion.onAnimationEnd = function() {
 			wade.removeSceneObject(this);
 		};
+		
+		return animation;
 	};
 	
 	
@@ -877,9 +870,6 @@ var App = function() {
 		var maxEnemy = level - 1;
 		var enemyCount = Object.keys(images.enemies).length - 1;
 		
-		//console.log('enemies: ' + enemyCount);
-		//console.log('level: ' + level);
-
 		if (maxEnemy > enemyCount) {
 			maxEnemy = enemyCount;
 		}
@@ -977,9 +967,8 @@ var App = function() {
 		force2d = !force2d;
 		
 		// Update local store and cookie with settings.
-		var shooterData = { force2d: force2d };
-		wade.storeLocalObject('force2d', shooterData);
-		setCookie('force2d', force2d, 365);
+		gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+		wade.storeLocalObject(dataNames.data, gameData);
 
 		// Reset game state to activate new settings.
 		clearTimeout(nextEnemy);
@@ -1024,9 +1013,8 @@ var App = function() {
 				toggleMusicTitle.title = 'Disable music';
 			}
 			
-			var shooterData = { music: musicPlaying };
-			wade.storeLocalObject('music', shooterData);
-			setCookie('music', musicPlaying, 365);
+			gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+			wade.storeLocalObject(dataNames.data, gameData);
 		}
 	};
 };
@@ -1074,8 +1062,6 @@ function handleMouseMove(ship, images, eventData) {
 	var shipPosition = ship.getPosition();
 	var sprite = ship.getSprite();
 	var animation = null;
-	
-	//console.log(shipPosition.x + ' -> ' + eventData.screenPosition.x);
 	
 	// Decide direction of animation
 	if (shipPosition.x < 0) {
