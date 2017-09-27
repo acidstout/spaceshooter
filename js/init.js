@@ -1,5 +1,8 @@
-const debug = false;
+// Disable debug-mode.
+var debug = false;
 
+//Check if mobile device is used.
+const isMobileDevice = checkForMobileDevice();
 
 /**
  * Check if mobile device is used
@@ -83,14 +86,13 @@ $(function() {
 		gamefile += 'min.';
 	}
 
-	// Initialize parallax starfield.
-	$('#starfield').starscroll(16, 4, 25, 4, 5, [ 96, 255, 255 ], true, true, 3, true);
-	
-	// Initialize WADE game engine.
-	wade.init(gamefile + 'js', {}, { container : 'game'});
-	
-	// Check for mouse events on top row icons.
-	//mousedown ontouchstart ontouchend onmousedown touchend
+	// Correct position of top row icons for mobile devices.
+	if (isMobileDevice) {
+		console.log('Detected mobile device.');
+		$('.game-icons').css({ 'top' : '3em' });
+	}
+
+	// Check for mouse events on top row icons. //mousedown ontouchstart ontouchend onmousedown touchend
 	$('.game-icon').on('touchstart click', function() {
 		var id = $(this).prop('id');
 
@@ -109,4 +111,10 @@ $(function() {
 				break;
 		}
 	});
+	
+	// Initialize parallax starfield.
+	$('#starfield').starscroll(16, 4, 25, 4, 5, [ 96, 255, 255 ], true, true, 3, true);
+	
+	// Initialize WADE game engine.
+	wade.init(gamefile + 'js', {}, { container : 'game'});
 });
