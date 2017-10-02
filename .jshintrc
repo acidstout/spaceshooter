@@ -1,0 +1,8 @@
+{
+    "undef": false,
+    "unused": false,
+    "strict": true,
+    "varstmt": false,
+    "esversion": 6,
+    "-W014": true
+}

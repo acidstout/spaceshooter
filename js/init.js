@@ -1,5 +1,5 @@
 // Disable debug-mode.
-var debug = false;
+var debug = true;
 
 //Check if mobile device is used.
 const isMobileDevice = checkForMobileDevice();
@@ -80,6 +80,7 @@ function log(param) {
  * Init game.
  */
 $(function() {
+	'use strict';
 	// Choose game file.
 	var gamefile = 'js/shooter.';
 	if (!debug) {
