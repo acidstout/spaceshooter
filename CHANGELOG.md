@@ -35,3 +35,5 @@
 - fixed issue with level not being increased when reaching the first 1000 points
 - fixed issue with fire rate and damage not being reset upon game over
 - added screenshots
+- code cleanup
+- added .jshintrc

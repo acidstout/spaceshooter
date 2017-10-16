@@ -7,7 +7,7 @@
  *
  */
 
-const version = '1.0.4';
+const version = '1.0.5';
 $('#version').text(version);
 
 // Disable cheat-mode by default.
@@ -175,18 +175,21 @@ var App = function() {
 	 * Load images and sounds. Also set screen size.
 	 */
 	this.load = function() {
+		// Counter
+		var i = 0;
+
 		// Images
 		wade.loadImage(images.logo);
 		wade.loadImage(images.ship);
 		
 		// Bullets
 		wade.loadImage(images.shipBullet);
-		for (var i = 0; i < Object.keys(images.enemyBullets).length; i++) {
+		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
 			wade.loadImage(images.enemyBullets[i].file);
 		}
 		
 		// Animation
-		for (var i = 0; i < Object.keys(images.boom).length; i++) {
+		for (i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
 		
@@ -200,12 +203,12 @@ var App = function() {
 		wade.loadImage(images.scoreIcon);
 		
 		// Enemies
-		for (var i = 0; i < Object.keys(images.enemies).length; i++) {
+		for (i = 0; i < Object.keys(images.enemies).length; i++) {
 			wade.loadImage(images.enemies[i]);
 		}
 		
 		// Asteroids
-		for (var i = 0; i < Object.keys(images.asteroids).length; i++) {
+		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
 			wade.loadImage(images.asteroids[i]);
 		}
 
@@ -1026,6 +1029,7 @@ var App = function() {
  * @return random integer
  */
 function getRandomInt(min, max) {
+	'use strict';
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -1037,6 +1041,7 @@ function getRandomInt(min, max) {
  * @returns entity of input type
  */
 function padStrings(obj) {
+	'use strict';
 	var padding = '       ';
 	var tmp;
 	
@@ -1058,6 +1063,7 @@ function padStrings(obj) {
  * @param eventData
  */
 function handleMouseMove(ship, images, eventData) {
+	'use strict';
 	// Get position and sprite of ship.
 	var shipPosition = ship.getPosition();
 	var sprite = ship.getSprite();
