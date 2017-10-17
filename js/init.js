@@ -2,7 +2,7 @@
 var debug = true;
 
 //Check if mobile device is used.
-const isMobileDevice = checkForMobileDevice();
+var isMobileDevice = checkForMobileDevice();
 
 /**
  * Check if mobile device is used
@@ -25,7 +25,7 @@ function toggleFullscreen(e) {
 	// Get fullscreen element
 	document.fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
 	
-	if ((typeof(document.fullscreenElement) == 'undefined' || document.fullscreenElement === null) && typeof(e) != 'undefined') {
+	if ((typeof(document.fullscreenElement) === 'undefined' || document.fullscreenElement === null) && typeof(e) !== 'undefined') {
 		// Switch to fullscreen.
 		if (e.requestFullscreen) {
 			e.requestFullscreen();
@@ -58,20 +58,24 @@ function toggleFullscreen(e) {
  */
 function log(param) {
 	'use strict';
-	if (typeof(param) != 'undefined') {
-		$.ajax({
-			url: 'log.php',
-			type: 'POST',
-			data: 'log=' + param,
-			success: function(result) {
-				console.log('AJAX call succeeded.');
-			},
-			error: function(xhr, status, code) {
-				console.warn('AJAX call returned: ' + status + ': ' + code);
-			}
-		});
-	} else {
-		console.log('init.js, log(): paramter missing.');
+	if (debug) {
+		if (typeof(param) !== 'undefined') {
+			console.log(param);
+
+			$.ajax({
+				url: 'log.php',
+				type: 'POST',
+				data: 'log=' + param,
+				success: function(result) {
+					console.log('AJAX call succeeded with result: ' + result);
+				},
+				error: function(xhr, status, code) {
+					console.warn('AJAX call returned: ' + status + ': ' + code);
+				}
+			});
+		} else {
+			console.log('init.js, log(): paramter missing.');
+		}
 	}
 }
 
@@ -99,7 +103,7 @@ $(function() {
 
 		switch (id) {
 			case 'goBack':
-				exitFullscreen();
+				toggleFullscreen();
 				break;
 			case 'toggleFullscreen':
 				toggleFullscreen(document.documentElement);
