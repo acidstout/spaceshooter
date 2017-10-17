@@ -7,7 +7,7 @@
  *
  */
 
-const version = '1.0.5';
+var version = '1.0.6';
 $('#version').text(version);
 
 // Disable cheat-mode by default.
@@ -64,7 +64,7 @@ var App = function() {
 	// Get highscores.
 	var oldHighScore   = (gameData && gameData.highscore) || 0;
 	
-	const images = {
+	var images = {
 		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
 
@@ -152,7 +152,7 @@ var App = function() {
 		scoreIcon   : '../img/icons/trophy.png'
 	};
 	
-	const sounds = {
+	var sounds = {
 		shoot       : '../sounds/shoot.mp3',
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
@@ -303,7 +303,7 @@ var App = function() {
 		
 		
 		// Ugly workaround for cut-off texts when using WebGL.
-		if (defaultRenderer == 'webgl') {
+		if (defaultRenderer === 'webgl') {
 			menuTexts = padStrings(menuTexts);
 		}
 		
@@ -328,7 +328,7 @@ var App = function() {
 			
 			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
 			scoreMsg = scoreMsg.replace('%i', score);
-			if (defaultRenderer == 'webgl') {
+			if (defaultRenderer === 'webgl') {
 				scoreMsg = padStrings(scoreMsg);
 			}
 
@@ -344,7 +344,7 @@ var App = function() {
 				highscoreMessage += '!';
 				
 				// Again that ugly thing.
-				if (defaultRenderer == 'webgl') {
+				if (defaultRenderer === 'webgl') {
 					highscoreMessage = padStrings(highscoreMessage);
 				}
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
@@ -472,7 +472,7 @@ var App = function() {
 					score -= 10;
 				}
 				
-				if (score < 0 || score == 'NaN') {
+				if (score < 0 || score === 'NaN') {
 					score = 0;
 				}
 			}
@@ -570,24 +570,24 @@ var App = function() {
 				
 				for (var i = 0; i < overlapping.length; i++) {
 
-					if (typeof(overlapping[i]) != 'undefined') {
+					if (typeof(overlapping[i]) !== 'undefined') {
 						// ... check if the overlapping object is either an enemy or an enemy's bullet.
 						if (overlapping[i].isEnemy || overlapping[i].isEnemyBullet) {
 							
 							// Comparing per-pixel is quite slow, but the only easy way to check for collisions while discarding transparent pixels.
-							if (typeof(overlapping[i]) != 'undefined' && ship.overlapsObject(overlapping[i], 'pixel')) {
+							if (typeof(overlapping[i]) !== 'undefined' && ship.overlapsObject(overlapping[i], 'pixel')) {
 								// Decrease health of overlapping object by a 10th of the default fire damage.
 								if (overlapping[i].health > 0) {
 									overlapping[i].health -= Math.floor(fireDamage / 10);
 								}
 								
 								// Remove enemy's bullet and/or ship if it hit the player's ship.
-								if (typeof(overlapping[i]) != 'undefined' && (overlapping[i].isEnemyBullet || overlapping[i].health <= 0)) {
+								if (typeof(overlapping[i]) !== 'undefined' && (overlapping[i].isEnemyBullet || overlapping[i].health <= 0)) {
 									wade.removeSceneObject(overlapping[i]);
 									wade.removeObjectFromArrayByIndex(i, overlapping);
 								}
 								
-								if (typeof(overlapping[i]) != 'undefined') {
+								if (typeof(overlapping[i]) !== 'undefined') {
 									enemyDamage = overlapping[i].damage || enemyDamage;
 								}
 
@@ -611,7 +611,7 @@ var App = function() {
 					playerHealth -= enemyDamage;
 				}
 				
-				if (playerHealth < 0 || playerHealth == 'NaN') {
+				if (playerHealth < 0 || playerHealth === 'NaN') {
 					playerHealth = 0;
 				}
 				healthCounter.getSprite().setText(playerHealth);
@@ -750,7 +750,7 @@ var App = function() {
 	 */
 	this.onKeyDown = function(eventData) {
 		// Check for space key 
-		if (gameStarted && eventData.keyCode == 32) {
+		if (gameStarted && eventData.keyCode === 32) {
 			gamePaused = !gamePaused;
 
 			if (gamePaused) {
@@ -769,7 +769,7 @@ var App = function() {
 				wade.removeSceneObject(pauseSpriteObj);
 				wade.resumeSimulation();
 				wade.app.onMouseMove = function(eventData) {
-					if (typeof(ship) != 'undefined') {
+					if (typeof(ship) !== 'undefined') {
 						handleMouseMove(ship, images, eventData);
 					}
 				};
@@ -784,7 +784,7 @@ var App = function() {
 	 * Move and animate ship according to mouse move.
 	 */
 	this.onMouseMove = function(eventData) {
-		if (typeof(ship) != 'undefined') {
+		if (typeof(ship) !== 'undefined') {
 			return handleMouseMove(ship, images, eventData);
 		}
 	};
@@ -795,7 +795,7 @@ var App = function() {
 	 */
 	this.explosion = function(position, i) {
 		// Fallback
-		if (typeof(i) == 'undefined' || i === null || typeof(images.boom[i]) == 'undefined') {
+		if (typeof(i) === 'undefined' || i === null || typeof(images.boom[i]) === 'undefined') {
 			i = 0;
 		}
 		
@@ -1045,7 +1045,7 @@ function padStrings(obj) {
 	var padding = '       ';
 	var tmp;
 	
-	if (typeof(obj) == 'object') {
+	if (typeof(obj) === 'object') {
 		tmp = {};
 		for (var i in obj) {
 			tmp[i] = padding + obj[i] + padding;
