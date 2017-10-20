@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.0.6';
+var version = '1.0.7';
 $('#version').text(version);
 
 // Disable cheat-mode by default.
@@ -19,7 +19,7 @@ var cheat = false;
  */
 var App = function() {
 	'use strict';
-	var isMobileDevice = isMobileDevice || false;
+	var isMobileDevice = false || checkForMobileDevice();
 	var ship;										// Player's ship.
 	var gamePaused     = false;						// Game paused.
 	var gameStarted    = false;						// Game started.
@@ -90,8 +90,8 @@ var App = function() {
 				}
 		},
 		
-		fly_left     : '../img/animations/ship/fly_left.png',
-		fly_right    : '../img/animations/ship/fly_right.png',
+		flyLeft     : '../img/animations/ship/fly_left.png',
+		flyRight    : '../img/animations/ship/fly_right.png',
 		
 		// Bullets
 		shipBullet   : '../img/bullets/bullet_ship.png',
@@ -194,8 +194,8 @@ var App = function() {
 		}
 		
 		// Fly left/right lean animation
-		wade.loadImage(images.fly_left);
-		wade.loadImage(images.fly_right);
+		wade.loadImage(images.flyLeft);
+		wade.loadImage(images.flyRight);
 
 		// Top row icons
 		wade.loadImage(images.healthIcon);
@@ -1073,18 +1073,18 @@ function handleMouseMove(ship, images, eventData) {
 	if (shipPosition.x < 0) {
 		if (shipPosition.x > eventData.screenPosition.x) {
 			//console.log('left');
-			animation = new Animation(images.fly_left, 5, 1, 30);
+			animation = new Animation(images.flyLeft, 5, 1, 30);
 		} else if (shipPosition.x < eventData.screenPosition.x) {
 			//console.log('right');
-			animation = new Animation(images.fly_right, 5, 1, 30);
+			animation = new Animation(images.flyRight, 5, 1, 30);
 		}
 	} else if (shipPosition.x > 0) {
 		if (shipPosition.x < eventData.screenPosition.x) {
 			//console.log('right');
-			animation = new Animation(images.fly_right, 5, 1, 30);
+			animation = new Animation(images.flyRight, 5, 1, 30);
 		} else if (shipPosition.x > eventData.screenPosition.x) {
 			//console.log('left');
-			animation = new Animation(images.fly_left, 5, 1, 30);
+			animation = new Animation(images.flyLeft, 5, 1, 30);
 		}
 	}			
 
