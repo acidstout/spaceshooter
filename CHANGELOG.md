@@ -37,3 +37,5 @@
 - added screenshots
 - code cleanup
 - added .jshintrc
+- fixed some annoyances in Microsoft Edge and Internet Explorer (e.g. music not playing, event handlers and toggling fullscreen not working)
+- updated window title
