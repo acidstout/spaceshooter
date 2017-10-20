@@ -20,6 +20,7 @@ var cheat = false;
 var App = function() {
 	'use strict';
 	var isMobileDevice = false || checkForMobileDevice();
+	var MSIE = false || getBrowserVersion('Trident/([0-9]{1,}[\.0-9]{0,})');
 	var ship;										// Player's ship.
 	var gamePaused     = false;						// Game paused.
 	var gameStarted    = false;						// Game started.
@@ -212,11 +213,12 @@ var App = function() {
 			wade.loadImage(images.asteroids[i]);
 		}
 
-		// Sounds
-		wade.loadAudio(sounds.shoot);
-		wade.loadAudio(sounds.hit);
-		wade.loadAudio(sounds.explode);
-		wade.loadAudio(sounds.loop);
+		// Sounds. Workaround for old browsers which do not support WebAudio.
+		var loadAudioFunction = wade.isWebAudioSupported()? 'loadAudio' : 'preloadAudio';
+		wade[loadAudioFunction](sounds.shoot);
+		wade[loadAudioFunction](sounds.hit);
+		wade[loadAudioFunction](sounds.explode);
+		wade[loadAudioFunction](sounds.loop);
 	};
 
 	
@@ -406,7 +408,7 @@ var App = function() {
 		 * Start game on left mouse click.
 		 */
 		wade.app.onMouseDown = function() {
-			if (wade.isMouseDown(0) || (wade.isMouseDown() && isMobileDevice)) {
+			if (wade.isMouseDown(0) || (wade.isMouseDown() && (isMobileDevice || MSIE))) {
 				// Hide close button and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				gameObj.style.cursor = 'none';
@@ -448,7 +450,7 @@ var App = function() {
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
 			var time = wade.getAppTime();
 			
-			if ((wade.isMouseDown(0) || wade.isMouseDown(2) || (wade.isMouseDown() && isMobileDevice)) && time >= nextFireTime) {
+			if ((wade.isMouseDown(0) || wade.isMouseDown(2) || (wade.isMouseDown() && (isMobileDevice || MSIE))) && time >= nextFireTime) {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
@@ -988,37 +990,45 @@ var App = function() {
 	 * Toogle background music
 	 */
 	this.toggleMusic = function() {
-		if (wade.isWebAudioSupported()) {
-			if (musicPlaying) {
+		if (musicPlaying) {
+			musicPlaying = false;
+			toggleMusicBtn.removeClass('music-on');
+			toggleMusicBtn.addClass('music-off');
+			toggleMusicTitle.title = 'Enable music';
+
+			if (MSIE) {
+				// Workaround for IE to stop the music, because he doesn't support stopping audio streams.
+				gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+				wade.storeLocalObject(dataNames.data, gameData);
+				location.reload();
+			} else {
 				if (loopUid > -1) {
 					wade.stopAudio(loopUid);
 				} else {
 					// Fallback if no uid is available for whatever reason.
 					wade.stopAudio();
 				}
-				musicPlaying = false;
-				toggleMusicBtn.removeClass('music-on');
-				toggleMusicBtn.addClass('music-off');
-				toggleMusicTitle.title = 'Enable music';
+			}
+		} else {
+			// Fallback if no uid is available for whatever reason.
+			if (loopUid > -1) {
+				wade.stopAudio(loopUid);
 			} else {
 				// Fallback if no uid is available for whatever reason.
-				if (loopUid > -1) {
-					wade.stopAudio(loopUid);
-				} else {
-					// Fallback if no uid is available for whatever reason.
-					wade.stopAudio();
-				}
-
-				loopUid = wade.playAudio(sounds.loop, true);
-				musicPlaying = true;
-				toggleMusicBtn.removeClass('music-off');
-				toggleMusicBtn.addClass('music-on');
-				toggleMusicTitle.title = 'Disable music';
+				wade.stopAudio();
 			}
-			
-			gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
-			wade.storeLocalObject(dataNames.data, gameData);
+
+			loopUid = wade.playAudio(sounds.loop, true);
+			musicPlaying = true;
+			toggleMusicBtn.removeClass('music-off');
+			toggleMusicBtn.addClass('music-on');
+			toggleMusicTitle.title = 'Disable music';
 		}
+		
+		gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+		wade.storeLocalObject(dataNames.data, gameData);
+
+		return false;
 	};
 };
 

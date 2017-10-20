@@ -61,7 +61,7 @@ function toggleFullscreen(e) {
 	} else {
 		// Switch back to windowed mode and set fullscreen element to null. Otherwise it will break toggling back and forth.
 		document.fullscreenElement = null;
-		document.exitFullscreen = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen;
+		document.exitFullscreen = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen || document.msExitFullscreen;
 		document.exitFullscreen();
 	}
 	
@@ -69,6 +69,37 @@ function toggleFullscreen(e) {
 }
 
 
+
+/**
+ * Check if user-agent contains a given string.
+ * 
+ * @param string
+ * @param boolean
+ * @returns boolean
+ */
+function getBrowserVersion(browserEngineRegEx, parseVersion) {
+	if (typeof(parseVersion) == 'undefined') {
+		parseVersion = false;
+	}
+	var rv = false;
+	var ua = navigator.userAgent;
+	var re = new RegExp(browserEngineRegEx);
+
+	if (re.exec(ua) != null) {
+		rv = RegExp.$1;
+		if (parseVersion) {
+			rv = parseFloat(rv.replace(/[^0-9\.]/g, ''));
+		}
+
+		if (typeof(rv) == 'string') {
+			rv = true;
+		}
+	}
+	
+	//console.log(ua + ' : ' + rv);
+	
+	return rv;
+}
 
 /**
  * Init game.
@@ -88,7 +119,7 @@ $(function() {
 		$('.game-icons').css({ 'top' : '3em' });
 	}
 
-	// Check for mouse events on top row icons. //mousedown ontouchstart ontouchend onmousedown touchend
+	// Check for mouse events on top row icons. //mousedown touchend ontouchstart ontouchend onmousedown
 	$('.game-icon').on('touchstart click', function() {
 		var id = $(this).prop('id');
 
@@ -106,6 +137,8 @@ $(function() {
 				wade.app.toggleMusic();
 				break;
 		}
+		
+		return false;
 	});
 	
 	// Initialize parallax starfield.
