@@ -13,6 +13,87 @@ $('#version').text(version);
 // Disable cheat-mode by default.
 var cheat = false;
 
+
+/**
+ * Return random integer between min and max values.
+ *
+ * @return random integer
+ */
+function getRandomInt(min, max) {
+	'use strict';
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+/**
+ * Surround strings or objects which contain strings with padding.
+ * 
+ * @param obj
+ * @returns entity of input type
+ */
+function padStrings(obj) {
+	'use strict';
+	var padding = '       ';
+	var tmp;
+	
+	if (typeof(obj) === 'object') {
+		tmp = {};
+		for (var i in obj) {
+			tmp[i] = padding + obj[i] + padding;
+		}
+	} else {
+		tmp = padding + obj + padding;
+	}
+	return tmp;
+}
+
+
+/**
+ * Handle mouse move and animation of ship.
+ * 
+ * @param eventData
+ */
+function handleMouseMove(ship, images, eventData) {
+	'use strict';
+	// Get position and sprite of ship.
+	var shipPosition = ship.getPosition();
+	var sprite = ship.getSprite();
+	var animation = null;
+	
+	// Decide direction of animation
+	if (shipPosition.x < 0) {
+		if (shipPosition.x > eventData.screenPosition.x) {
+			//console.log('left');
+			animation = new Animation(images.flyLeft, 5, 1, 30);
+		} else if (shipPosition.x < eventData.screenPosition.x) {
+			//console.log('right');
+			animation = new Animation(images.flyRight, 5, 1, 30);
+		}
+	} else if (shipPosition.x > 0) {
+		if (shipPosition.x < eventData.screenPosition.x) {
+			//console.log('right');
+			animation = new Animation(images.flyRight, 5, 1, 30);
+		} else if (shipPosition.x > eventData.screenPosition.x) {
+			//console.log('left');
+			animation = new Animation(images.flyLeft, 5, 1, 30);
+		}
+	}			
+
+	// Animate ship
+	if (animation !== null) {
+		sprite.addAnimation('fly', animation);
+		ship.playAnimation('fly');
+	
+		ship.onAnimationEnd = function() {
+			sprite.setImageFile(images.ship);
+		};
+	}
+	
+	// Finally move ship to new position.
+	return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+}
+
+
 /**
  * Main function of app
  *
@@ -20,7 +101,7 @@ var cheat = false;
 var App = function() {
 	'use strict';
 	var isMobileDevice = false || checkForMobileDevice();
-	var MSIE = false || getBrowserVersion('Trident/([0-9]{1,}[\.0-9]{0,})');
+	var MSIE = false || getBrowserVersion('Trident/([0-9]{1,}[.0-9]{0,})');
 	var ship;										// Player's ship.
 	var gamePaused     = false;						// Game paused.
 	var gameStarted    = false;						// Game started.
@@ -72,23 +153,23 @@ var App = function() {
 		// Animated explosions (file, animation speed, number of tiles per x/y-axis).
 		boom : {
 			0 : {
-					file: '../img/animations/explosion/explode_4x4_ship.png',
-					speed: 30,
-					x: 4,
-					y: 4
-				},
+				file: '../img/animations/explosion/explode_4x4_ship.png',
+				speed: 30,
+				x: 4,
+				y: 4
+			},
 			1: {
-					file: '../img/animations/explosion/explode_4x4_ring.png',
-					speed: 30,
-					x: 4,
-					y: 4
-				},
+				file: '../img/animations/explosion/explode_4x4_ring.png',
+				speed: 30,
+				x: 4,
+				y: 4
+			},
 			2 : {
-					file: '../img/animations/explosion/explode_5x3_enemy.png',
-					speed: 30,
-					x: 5,
-					y: 3
-				}
+				file: '../img/animations/explosion/explode_5x3_enemy.png',
+				speed: 30,
+				x: 5,
+				y: 3
+			}
 		},
 		
 		flyLeft     : '../img/animations/ship/fly_left.png',
@@ -98,30 +179,30 @@ var App = function() {
 		shipBullet   : '../img/bullets/bullet_ship.png',
 		enemyBullets : {
 			0 : {
-					file: '../img/bullets/bullet0.png',
-					delay: 600,
-					damage: 1
-				},
+				file: '../img/bullets/bullet0.png',
+				delay: 600,
+				damage: 1
+			},
 			1 : {
-					file: '../img/bullets/bullet1.png',
-					delay: 500,
-					damage: 3
-				},
+				file: '../img/bullets/bullet1.png',
+				delay: 500,
+				damage: 3
+			},
 			2 : {
-					file: '../img/bullets/bullet2.png',
-					delay: 400,
-					damage: 5
-				},
+				file: '../img/bullets/bullet2.png',
+				delay: 400,
+				damage: 5
+			},
 			3 : {
-					file: '../img/bullets/bullet3.png',
-					delay: 300,
-					damage: 10
-				},
+				file: '../img/bullets/bullet3.png',
+				delay: 300,
+				damage: 10
+			},
 			4 : {
-					file: '../img/bullets/bullet4.png',
-					delay: 200,
-					damage: 20
-				}
+				file: '../img/bullets/bullet4.png',
+				delay: 200,
+				damage: 20
+			}
 		},
 		
 		// Enemies
@@ -277,7 +358,7 @@ var App = function() {
 		// Log statistics into file.
 		if (debug) {
 			log(
-				  '\n\t\tbrowser screen size   : '
+				'\n\t\tbrowser screen size   : '
 				+ $(window).width() +'x' + $(window).height()
 				+ '\n\t\tactual min screen size: '
 				+ wade.getMinScreenWidth() + 'x' + wade.getMinScreenHeight()
@@ -358,7 +439,11 @@ var App = function() {
 		// Store highscore only if player didn't cheat. 
 		if(!cheat) {
 			// Update local store with highscore.
-			gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+			gameData = {
+				force2d,
+				music: musicPlaying,
+				highscore: oldHighScore
+			};
 			wade.storeLocalObject(dataNames.data, gameData);
 		}
 		
@@ -632,7 +717,7 @@ var App = function() {
 				// Check high score
 				if (!cheat && score > oldHighScore) {
 					gameData = {
-						force2d: force2d,
+						force2d,
 						music: musicPlaying,
 						highscore: score
 					};
@@ -1031,83 +1116,3 @@ var App = function() {
 		return false;
 	};
 };
-
-
-/**
- * Return random integer between min and max values.
- *
- * @return random integer
- */
-function getRandomInt(min, max) {
-	'use strict';
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-/**
- * Surround strings or objects which contain strings with padding.
- * 
- * @param obj
- * @returns entity of input type
- */
-function padStrings(obj) {
-	'use strict';
-	var padding = '       ';
-	var tmp;
-	
-	if (typeof(obj) === 'object') {
-		tmp = {};
-		for (var i in obj) {
-			tmp[i] = padding + obj[i] + padding;
-		}
-	} else {
-		tmp = padding + obj + padding;
-	}
-	return tmp;
-}
-
-
-/**
- * Handle mouse move and animation of ship.
- * 
- * @param eventData
- */
-function handleMouseMove(ship, images, eventData) {
-	'use strict';
-	// Get position and sprite of ship.
-	var shipPosition = ship.getPosition();
-	var sprite = ship.getSprite();
-	var animation = null;
-	
-	// Decide direction of animation
-	if (shipPosition.x < 0) {
-		if (shipPosition.x > eventData.screenPosition.x) {
-			//console.log('left');
-			animation = new Animation(images.flyLeft, 5, 1, 30);
-		} else if (shipPosition.x < eventData.screenPosition.x) {
-			//console.log('right');
-			animation = new Animation(images.flyRight, 5, 1, 30);
-		}
-	} else if (shipPosition.x > 0) {
-		if (shipPosition.x < eventData.screenPosition.x) {
-			//console.log('right');
-			animation = new Animation(images.flyRight, 5, 1, 30);
-		} else if (shipPosition.x > eventData.screenPosition.x) {
-			//console.log('left');
-			animation = new Animation(images.flyLeft, 5, 1, 30);
-		}
-	}			
-
-	// Animate ship
-	if (animation !== null) {
-		sprite.addAnimation('fly', animation);
-		ship.playAnimation('fly');
-	
-		ship.onAnimationEnd = function() {
-			sprite.setImageFile(images.ship);
-		};
-	}
-	
-	// Finally move ship to new position.
-	return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
-}
