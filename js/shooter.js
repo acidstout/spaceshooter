@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.0.7';
+var version = '1.0.8';
 $('#version').text(version);
 
 // Disable cheat-mode by default.
@@ -1089,7 +1089,11 @@ var App = function() {
 
 			if (MSIE) {
 				// Workaround for IE to stop the music, because he doesn't support stopping audio streams.
-				gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+				gameData = {
+					force2d,
+					music: musicPlaying,
+					highscore: oldHighScore
+				};
 				wade.storeLocalObject(dataNames.data, gameData);
 				location.reload();
 			} else {
@@ -1116,7 +1120,11 @@ var App = function() {
 			toggleMusicTitle.title = 'Disable music';
 		}
 		
-		gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+		gameData = {
+			force2d,
+			music: musicPlaying,
+			highscore: oldHighScore
+		};
 		wade.storeLocalObject(dataNames.data, gameData);
 
 		return false;
