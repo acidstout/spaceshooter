@@ -39,7 +39,9 @@ function padStrings(obj) {
 	if (typeof(obj) === 'object') {
 		tmp = {};
 		for (var i in obj) {
-			tmp[i] = padding + obj[i] + padding;
+			if ({}.hasOwnProperty.call(obj, i)) {
+				tmp[i] = padding + obj[i] + padding;
+			}
 		}
 	} else {
 		tmp = padding + obj + padding;
@@ -1057,7 +1059,11 @@ var App = function() {
 		force2d = !force2d;
 		
 		// Update local store and cookie with settings.
-		gameData = { force2d: force2d, music: musicPlaying, highscore: oldHighScore };
+		gameData = { 
+			force2d,
+			music: musicPlaying,
+			highscore: oldHighScore
+		};
 		wade.storeLocalObject(dataNames.data, gameData);
 
 		// Reset game state to activate new settings.
