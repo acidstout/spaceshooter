@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.0.8';
+var version = '1.0.9';
 $('#version').text(version);
 
 // Disable cheat-mode by default.
@@ -799,6 +799,19 @@ var App = function() {
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 
+	/**
+	 * Wrapper around pause functions.
+	 */
+	this.pauseGame = function() {
+		wade.pauseSimulation();
+		clearTimeout(nextEnemy);
+		clearTimeout(nextAsteroid);
+		wade.app.onMouseMove = null;
+		wade.addSceneObject(pauseSpriteObj);
+		gameObj.style.cursor = 'default';
+		
+		return false;
+	};
 	
 	/**
 	 * Check for focus loss (e.g. ich the user tabs/clicks away).
@@ -807,12 +820,7 @@ var App = function() {
 		if (gameStarted && !gamePaused) {
 			console.log('Game paused due to focus loss.');
 			gamePaused = true;
-			wade.pauseSimulation();
-			clearTimeout(nextEnemy);
-			clearTimeout(nextAsteroid);
-			wade.app.onMouseMove = null;
-			wade.addSceneObject(pauseSpriteObj);
-			gameObj.style.cursor = 'default';
+			wade.app.pauseGame();
 		} else {
 			// Don't spawn asteroids on main screen if window has no focus.
 			if (!gameStarted) {
@@ -844,12 +852,7 @@ var App = function() {
 
 			if (gamePaused) {
 				//console.log('Game paused by user.');
-				wade.pauseSimulation();
-				clearTimeout(nextEnemy);
-				clearTimeout(nextAsteroid);
-				wade.app.onMouseMove = null;
-				wade.addSceneObject(pauseSpriteObj);
-				gameObj.style.cursor = 'default';
+				wade.app.pauseGame();
 			} else {
 				//console.log('Game resumed by user.');
 				gameObj.style.cursor = 'none';
@@ -913,6 +916,19 @@ var App = function() {
 	
 	
 	/**
+	 * Return random coordinates for a given sprite.
+	 */
+	this.getRandomCoords = function(sprite) {
+		return {
+			x1: (Math.random() - 0.5) * wade.getScreenWidth(),
+			y1: -wade.getScreenHeight() / 2 - sprite.getSize().y / 2,
+			x2: (Math.random() - 0.5) * wade.getScreenWidth(),
+			y2: Math.abs(wade.getScreenHeight() / 2 - sprite.getSize().y / 2)
+		};
+	};
+	
+	
+	/**
 	 * Spawn asteroid.
 	 */
 	this.spawnAsteroid = function() {
@@ -924,15 +940,12 @@ var App = function() {
 		sprite = new Sprite(images.asteroids[asteroidId]);
 		
 		// Calculate start and end coordinates.
-		var startX = (Math.random() - 0.5) * wade.getScreenWidth();
-		var endX = (Math.random() - 0.5) * wade.getScreenWidth();
-		var startY = -wade.getScreenHeight() / 2 - sprite.getSize().y / 2;
-		var endY = -startY;
-
+		var coords = wade.app.getRandomCoords(sprite);
+		
 		// Add the object to the scene and make it move.
-		var asteroid = new SceneObject(sprite, 0, startX, startY);
+		var asteroid = new SceneObject(sprite, 0, coords.x1, coords.y1);
 		wade.addSceneObject(asteroid);
-		asteroid.moveTo(endX, endY, 200);
+		asteroid.moveTo(coords.x2, coords.y2, 200);
 		asteroid.isEnemy = true;
 		asteroid.isAsteroid = true;
 		asteroid.health = asteroidHealth[asteroidId];
@@ -971,15 +984,12 @@ var App = function() {
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
-		var startX = (Math.random() - 0.5) * wade.getScreenWidth();
-		var endX = (Math.random() - 0.5) * wade.getScreenWidth();
-		var startY = -wade.getScreenHeight() / 2 - sprite.getSize().y / 2;
-		var endY = -startY;
+		var coords = wade.app.getRandomCoords(sprite);
 
 		// Add the object to the scene and make it move.
-		var enemy = new SceneObject(sprite, 0, startX, startY);
+		var enemy = new SceneObject(sprite, 0, coords.x1, coords.y1);
 		wade.addSceneObject(enemy);
-		enemy.moveTo(endX, endY, 200);
+		enemy.moveTo(coords.x2, coords.y2, 200);
 		enemy.isEnemy = true;
 		enemy.isAsteroid = false;
 		enemy.health = enemyHealth[enemyId];
