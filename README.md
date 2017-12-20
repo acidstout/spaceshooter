@@ -1,6 +1,6 @@
+# Overkill - A retro space shooter
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8b1a2f944dd4497ea10e6400d1b1cc67)](https://www.codacy.com/app/TeamDJS/spaceshooter)
 
-# Overkill - A retro space shooter
 A simple space shooter based on the WADE game engine. Separated in five tiers with increasing difficulty and different enemies. Your energy is reset after each tier, so when reaching the last tier try to stay alive as long as possible, because your energy won't be reset. The huge spacestation in tier five is very strong. Also try to avoid flying into asteroids. They cause huge damage.
 
 ## Screenshot
