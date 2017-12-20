@@ -39,3 +39,5 @@
 - added .jshintrc
 - fixed some annoyances in Microsoft Edge and Internet Explorer (e.g. music not playing, event handlers and toggling fullscreen not working)
 - updated window title
+- hid cheat-mode
+- fixed issue with setting identifier being minified

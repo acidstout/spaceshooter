@@ -7,11 +7,132 @@
  *
  */
 
-var version = '1.0.9';
+var version = '1.1.0';
 $('#version').text(version);
 
-// Disable cheat-mode by default.
-var cheat = false;
+
+/**
+ * Functions to encode/decode Base64.
+ */
+var Base64 = {
+	_keyStr: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
+
+	encode: function(input) {
+		'use strict';
+		var output = '';
+		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+		var i = 0;
+
+		input = Base64._utf8_encode(input);
+
+		while (i < input.length) {
+			chr1 = input.charCodeAt(i++);
+			chr2 = input.charCodeAt(i++);
+			chr3 = input.charCodeAt(i++);
+
+			enc1 = chr1 >> 2;
+			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+			enc4 = chr3 & 63;
+
+			if (isNaN(chr2)) {
+				enc3 = enc4 = 64;
+			} else if (isNaN(chr3)) {
+				enc4 = 64;
+			}
+
+			output = output + this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) + this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
+		}
+
+		return output;
+	},
+
+	decode: function(input) {
+		'use strict';
+		var output = '';
+		var chr1, chr2, chr3;
+		var enc1, enc2, enc3, enc4;
+		var i = 0;
+
+		input = input.replace('/[^A-Za-z0-9+/=]/g', '');
+
+		while (i < input.length) {
+			enc1 = this._keyStr.indexOf(input.charAt(i++));
+			enc2 = this._keyStr.indexOf(input.charAt(i++));
+			enc3 = this._keyStr.indexOf(input.charAt(i++));
+			enc4 = this._keyStr.indexOf(input.charAt(i++));
+
+			chr1 = (enc1 << 2) | (enc2 >> 4);
+			chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+			chr3 = ((enc3 & 3) << 6) | enc4;
+
+			output = output + String.fromCharCode(chr1);
+
+			if (enc3 != 64) {
+				output = output + String.fromCharCode(chr2);
+			}
+
+			if (enc4 != 64) {
+				output = output + String.fromCharCode(chr3);
+			}
+		}
+
+		output = Base64._utf8_decode(output);
+		return output;
+	},
+
+	_utf8_encode: function(string) {
+		'use strict';
+		string = string.replace('/\r\n/g', '\n');
+		var utftext = '';
+
+		for (var n = 0; n < string.length; n++) {
+			var c = string.charCodeAt(n);
+
+			if (c < 128) {
+				utftext += String.fromCharCode(c);
+			} else if ((c > 127) && (c < 2048)) {
+				utftext += String.fromCharCode((c >> 6) | 192);
+				utftext += String.fromCharCode((c & 63) | 128);
+			} else {
+				utftext += String.fromCharCode((c >> 12) | 224);
+				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+				utftext += String.fromCharCode((c & 63) | 128);
+			}
+		}
+
+		return utftext;
+	},
+
+	_utf8_decode: function(utftext) {
+		'use strict';
+		var string = '';
+		var i = 0,
+			c1 = 0,
+			c2 = 0,
+			c3 = 0;
+
+		while (i < utftext.length) {
+			c1 = utftext.charCodeAt(i);
+
+			if (c1 < 128) {
+				string += String.fromCharCode(c1);
+				i++;
+			} else if ((c1 > 191) && (c1 < 224)) {
+				c3 = utftext.charCodeAt(i + 1);
+				string += String.fromCharCode(((c1 & 31) << 6) | (c3 & 63));
+				i += 2;
+			} else {
+				c3 = utftext.charCodeAt(i + 1);
+				c2 = utftext.charCodeAt(i + 2);
+				string += String.fromCharCode(((c1 & 15) << 12) | ((c3 & 63) << 6) | (c2 & 63));
+				i += 3;
+			}
+		}
+
+		return string;
+	}
+};
 
 
 /**
@@ -130,8 +251,8 @@ var App = function() {
 	var scoreCounter;								// An object to display the score.
 	var score          = 0;							// Current score.
 	
-	var dataNames    = {
-		data      : 'overkill',
+	var dataNames      = {
+		data: 'overkill'
 	};
 
 	var healthCounter;								// Object to display the health.
@@ -145,6 +266,9 @@ var App = function() {
 	// Retrieve game data.
 	var gameData       = wade.retrieveLocalObject(dataNames.data);
 
+	// Disable cheat-mode by default.
+	const sissy = (gameData && gameData.sissy) || false;
+	
 	// Get highscores.
 	var oldHighScore   = (gameData && gameData.highscore) || 0;
 	
@@ -311,7 +435,7 @@ var App = function() {
 	this.init = function() {
 		// Reload game data. This is required after game over.
 		gameData  = wade.retrieveLocalObject(dataNames.data);
-
+		
 		// Set layer render mode to either WebGL or 2D canvas.
 		force2d = (gameData && gameData.force2d) || force2d;
 
@@ -369,7 +493,7 @@ var App = function() {
 				+ '\n\t\trender-mode           : ' + defaultRenderer
 				+ '\n\t\tforce2D               : ' + force2d
 				+ '\n\t\tisMobile              : ' + isMobileDevice
-				+ '\n\t\tisCheater             : ' + cheat
+				+ '\n\t\tisSissy               : ' + sissy
 				+ '\n\t\tcurrent score         : ' + score
 				+ '\n\t\thighscore             : ' + oldHighScore
 				+ '\n\t\tlevel                 : ' + level
@@ -406,9 +530,9 @@ var App = function() {
 		}
 
 		if (score > 0) {
-			var scoreVerb = 'SCORED';
-			if (cheat) {
-				scoreVerb = 'CHEATED';
+			var scoreVerb = Base64.decode('U0NPUkVE'); //'SCORED';
+			if (sissy) {
+				scoreVerb = Base64.decode('Q0hFQVRFRA=='); //'CHEATED';
 			}
 			
 			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
@@ -420,10 +544,10 @@ var App = function() {
 			clickToStart.addSprite(new TextSprite(scoreMsg, '24pt Highspeed', 'white', 'center'), { y: 120 });
 
 			if (score > oldHighScore) {
-				var highscoreMessage = 'NEW HIGHSCORE';
+				var highscoreMessage = Base64.decode('TkVXIEhJR0hTQ09SRQ=='); //'NEW HIGHSCORE';
 				oldHighScore = score;
-				if (cheat) {
-					highscoreMessage += ' NOT SAVED';
+				if (sissy) {
+					highscoreMessage += Base64.decode('IE5PVCBTQVZFRA=='); //' NOT SAVED';
 				}
 				
 				highscoreMessage += '!';
@@ -439,10 +563,10 @@ var App = function() {
 		}
 		
 		// Store highscore only if player didn't cheat. 
-		if(!cheat) {
+		if(!sissy) {
 			// Update local store with highscore.
 			gameData = {
-				force2d,
+				force2d: force2d,
 				music: musicPlaying,
 				highscore: oldHighScore
 			};
@@ -530,7 +654,7 @@ var App = function() {
 			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
 		
 			// Turbo fire!
-			if (wade.isMouseDown(2) && cheat) {
+			if (wade.isMouseDown(2) && sissy) {
 				fireRateTemp = 50;
 			}
 
@@ -557,7 +681,7 @@ var App = function() {
 				};
 				
 				// Decrease score with every shoot
-				if (score > 0 && !cheat && fireRateTemp < 60) {
+				if (score > 0 && !sissy && fireRateTemp < 60) {
 					score -= 10;
 				}
 				
@@ -613,7 +737,7 @@ var App = function() {
 			// Increase level and health every 1000 points.
 			if (Math.floor(score / 1000) > level -1 && level < 5) {
 				level += 1;
-				if (!cheat) {
+				if (!sissy) {
 					playerHealth = 100;
 				}
 
@@ -717,9 +841,9 @@ var App = function() {
 				wade.setMainLoop(null, 'die');
 
 				// Check high score
-				if (!cheat && score > oldHighScore) {
+				if (!sissy && score > oldHighScore) {
 					gameData = {
-						force2d,
+						force2d: force2d,
 						music: musicPlaying,
 						highscore: score
 					};
@@ -750,7 +874,7 @@ var App = function() {
 		
 		if (!gameStarted) {
 			// Initialize game values
-			if (cheat) {
+			if (sissy) {
 				playerHealth = 999;
 			} else {
 				playerHealth = 100;
@@ -1070,7 +1194,7 @@ var App = function() {
 		
 		// Update local store and cookie with settings.
 		gameData = { 
-			force2d,
+			force2d: force2d,
 			music: musicPlaying,
 			highscore: oldHighScore
 		};
@@ -1100,7 +1224,7 @@ var App = function() {
 			if (MSIE) {
 				// Workaround for IE to stop the music, because he doesn't support stopping audio streams.
 				gameData = {
-					force2d,
+					force2d: force2d,
 					music: musicPlaying,
 					highscore: oldHighScore
 				};
@@ -1131,7 +1255,7 @@ var App = function() {
 		}
 		
 		gameData = {
-			force2d,
+			force2d: force2d,
 			music: musicPlaying,
 			highscore: oldHighScore
 		};
