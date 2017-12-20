@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.0.9';
+var version = '1.1.0';
 $('#version').text(version);
 
 
@@ -566,7 +566,7 @@ var App = function() {
 		if(!sissy) {
 			// Update local store with highscore.
 			gameData = {
-				force2d,
+				force2d: force2d,
 				music: musicPlaying,
 				highscore: oldHighScore
 			};
@@ -843,7 +843,7 @@ var App = function() {
 				// Check high score
 				if (!sissy && score > oldHighScore) {
 					gameData = {
-						force2d,
+						force2d: force2d,
 						music: musicPlaying,
 						highscore: score
 					};
@@ -1194,7 +1194,7 @@ var App = function() {
 		
 		// Update local store and cookie with settings.
 		gameData = { 
-			force2d,
+			force2d: force2d,
 			music: musicPlaying,
 			highscore: oldHighScore
 		};
@@ -1224,7 +1224,7 @@ var App = function() {
 			if (MSIE) {
 				// Workaround for IE to stop the music, because he doesn't support stopping audio streams.
 				gameData = {
-					force2d,
+					force2d: force2d,
 					music: musicPlaying,
 					highscore: oldHighScore
 				};
@@ -1255,7 +1255,7 @@ var App = function() {
 		}
 		
 		gameData = {
-			force2d,
+			force2d: force2d,
 			music: musicPlaying,
 			highscore: oldHighScore
 		};
