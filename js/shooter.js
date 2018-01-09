@@ -7,7 +7,7 @@
  *
  */
 
-var version = '1.1.0';
+var version = '1.1.1';
 $('#version').text(version);
 
 
@@ -17,13 +17,13 @@ $('#version').text(version);
 var Base64 = {
 	_keyStr: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
 
-	encode: function(input) {
+	encode(input) {
 		'use strict';
 		var output = '';
 		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
 		var i = 0;
 
-		input = Base64._utf8_encode(input);
+		input = Base64._utf8Encode(input);
 
 		while (i < input.length) {
 			chr1 = input.charCodeAt(i++);
@@ -47,7 +47,7 @@ var Base64 = {
 		return output;
 	},
 
-	decode: function(input) {
+	decode(input) {
 		'use strict';
 		var output = '';
 		var chr1, chr2, chr3;
@@ -68,20 +68,20 @@ var Base64 = {
 
 			output = output + String.fromCharCode(chr1);
 
-			if (enc3 != 64) {
+			if (enc3 !== 64) {
 				output = output + String.fromCharCode(chr2);
 			}
 
-			if (enc4 != 64) {
+			if (enc4 !== 64) {
 				output = output + String.fromCharCode(chr3);
 			}
 		}
 
-		output = Base64._utf8_decode(output);
+		output = Base64._utf8Decode(output);
 		return output;
 	},
 
-	_utf8_encode: function(string) {
+	_utf8Encode(string) {
 		'use strict';
 		string = string.replace('/\r\n/g', '\n');
 		var utftext = '';
@@ -104,7 +104,7 @@ var Base64 = {
 		return utftext;
 	},
 
-	_utf8_decode: function(utftext) {
+	_utf8Decode(utftext) {
 		'use strict';
 		var string = '';
 		var i = 0,
