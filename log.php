@@ -1,1 +1,0 @@
-<?php (isset($_REQUEST) && count($_REQUEST) > 0) ? error_log(print_r($_REQUEST, true), 0) : null;

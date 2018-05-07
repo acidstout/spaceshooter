@@ -7,9 +7,11 @@
  *
  */
 
-var version = '1.1.1';
-$('#version').text(version);
 
+// TODO:
+//		- make player name editable
+
+var version = '1.1.2';
 
 /**
  * Functions to encode/decode Base64.
@@ -250,6 +252,7 @@ var App = function() {
 	
 	var scoreCounter;								// An object to display the score.
 	var score          = 0;							// Current score.
+	var divisor        = 1000;                      // Increase level and health every 1000 points. Gets increased by 10^level later.
 	
 	var dataNames      = {
 		data: 'overkill'
@@ -364,7 +367,8 @@ var App = function() {
 		shoot       : '../sounds/shoot.mp3',
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
-		loop        : '../sounds/loop.mp3'
+		loop        : '../sounds/loop.mp3',
+		menu        : '../sounds/menu.mp3'
 	};
 	
 	var toggleRendererTitle    = document.getElementById('toggleRendererTitle');
@@ -373,6 +377,8 @@ var App = function() {
 	var toggleMusicBtn         = $('#toggleMusicBtn');
 	var gameObj                = document.getElementById('game');
 	var gameBtnObj             = document.getElementById('game-icons');
+	
+	$('#version').text(version + ', WADE ' + wade.getVersion());
 	
 	// Prevent the game to be run in an iframe.
 	wade.preventIframe();
@@ -426,6 +432,7 @@ var App = function() {
 		wade[loadAudioFunction](sounds.hit);
 		wade[loadAudioFunction](sounds.explode);
 		wade[loadAudioFunction](sounds.loop);
+		wade[loadAudioFunction](sounds.menu);
 	};
 
 	
@@ -439,12 +446,14 @@ var App = function() {
 		// Set layer render mode to either WebGL or 2D canvas.
 		force2d = (gameData && gameData.force2d) || force2d;
 
-		if (force2d) {
-			wade.setLayerRenderMode(defaultLayerId, '2d');
-			toggleRendererBtn.removeClass('fa-toggle-on');
-			toggleRendererBtn.addClass('fa-toggle-off');
-			toggleRendererTitle.title = 'Enable WebGL';
-		} else {
+		// Always set render-mode to 2D canvas first ...
+		wade.setLayerRenderMode(defaultLayerId, '2d');
+		toggleRendererBtn.removeClass('fa-toggle-on');
+		toggleRendererBtn.addClass('fa-toggle-off');
+		toggleRendererTitle.title = 'Enable WebGL';
+		
+		// ... before we set it to WebGL. This eliminates ugly fonts.
+		if (!force2d) {
 			wade.setLayerRenderMode(defaultLayerId, 'webgl');
 			toggleRendererBtn.removeClass('fa-toggle-off');
 			toggleRendererBtn.addClass('fa-toggle-on');
@@ -482,6 +491,7 @@ var App = function() {
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
 		
 		// Log statistics into file.
+		/*
 		if (debug) {
 			log(
 				'\n\t\tbrowser screen size   : '
@@ -502,7 +512,7 @@ var App = function() {
 				+ '\n\t\tfire damage           : ' + fireDamage
 			);
 		}		
-		
+		*/
 		// Main screen text.
 		var menuTexts = {
 			insertCoin  : '- INSERT COIN -',
@@ -524,15 +534,17 @@ var App = function() {
 		
 		clickToStart.addSprite(clickText, { y: 320 });
 
-		if (score <= 0 || oldHighScore >= score) {
-			menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', oldHighScore);
-			clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
-		}
+		// Get current highscore.
+		wade.app.getHighestScore(score, clickToStart, menuTexts);
 
 		if (score > 0) {
 			var scoreVerb = Base64.decode('U0NPUkVE'); //'SCORED';
+
+			// Store highscore only if player didn't cheat. 
 			if (sissy) {
 				scoreVerb = Base64.decode('Q0hFQVRFRA=='); //'CHEATED';
+			} else {
+				wade.app.saveHighscore(score);
 			}
 			
 			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
@@ -546,6 +558,8 @@ var App = function() {
 			if (score > oldHighScore) {
 				var highscoreMessage = Base64.decode('TkVXIEhJR0hTQ09SRQ=='); //'NEW HIGHSCORE';
 				oldHighScore = score;
+				score = 0;
+				
 				if (sissy) {
 					highscoreMessage += Base64.decode('IE5PVCBTQVZFRA=='); //' NOT SAVED';
 				}
@@ -556,24 +570,14 @@ var App = function() {
 				if (defaultRenderer === 'webgl') {
 					highscoreMessage = padStrings(highscoreMessage);
 				}
+				
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
 				//newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
 				clickToStart.addSprite(newHighscoreText, { y: 160 });
 			}
 		}
 		
-		// Store highscore only if player didn't cheat. 
-		if(!sissy) {
-			// Update local store with highscore.
-			gameData = {
-				force2d: force2d,
-				music: musicPlaying,
-				highscore: oldHighScore
-			};
-			wade.storeLocalObject(dataNames.data, gameData);
-		}
-		
-		
+
 		// Add logo
 		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
 		
@@ -601,16 +605,8 @@ var App = function() {
 		
 		// Decide whether to play music or not.
 		if (wade.isWebAudioSupported()) {
-			if (musicPlaying && loopUid === null) {
-				loopUid = wade.playAudio(sounds.loop, true);
-				
-				// On error
-				if (loopUid < 0) {
-					toggleMusicBtn.removeClass('music-on');
-					toggleMusicBtn.addClass('music-off');
-					toggleMusicTitle.title = 'Enable music';
-					musicPlaying = false;
-				}
+			if (musicPlaying) {
+				wade.app.musicOn();
 			}
 		}
 
@@ -620,7 +616,7 @@ var App = function() {
 		 */
 		wade.app.onMouseDown = function() {
 			if (wade.isMouseDown(0) || (wade.isMouseDown() && (isMobileDevice || MSIE))) {
-				// Hide close button and cursor while playing.
+				// Hide toggle buttons and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				gameObj.style.cursor = 'none';
 
@@ -634,6 +630,133 @@ var App = function() {
 		};
 	};
 
+	
+	/**
+	 * Get highest score. Wrapper around an AJAX request to eliminate the "disadvantages" of async requests.
+	 */
+	this.getHighestScore = function(score, clickToStart, menuTexts) {
+		var ajaxInterval = setInterval(function() {
+			var payload = {
+					'action' : 'getHighestScore'
+				}
+
+			var json = JSON.stringify(payload);
+			var data = Base64.encode(json);
+
+			$.ajax({
+				url: 'php/backend.php',
+				type: 'POST',
+				data: 'data=' + data,
+				success(result) {
+					if (result == null || result == '' || result == 'FAILED') {
+						//result = 0;
+						result = oldHighScore;
+					}
+					
+					//console.log('Score:' + score + ', Result: ' + result + ', Old: ' + oldHighScore);
+
+					if (score <= 0 || result > score) {
+						// Show current highscore
+						menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', result);
+						clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
+					}
+
+					oldHighScore = result;
+					clearTimeout(ajaxInterval);
+				},
+				error(xhr, status, code) {
+					console.warn('getHighestScore(): AJAX call returned: ' + status + ': ' + code);
+				}
+			});
+		}, 1000);
+	};
+	
+	
+	/**
+	 * Load highscore
+	 */
+	this.loadHighscore = function() {
+		'use strict';
+		var payload = {
+			'action' : 'loadScore'
+		}
+
+		var json          = JSON.stringify(payload);
+		var data          = Base64.encode(json);
+		var msg           = 'Highscore not loaded!';
+		var highscoreOnly = (typeof(highscoreOnly) !== 'undefined') ? highscoreOnly : false;
+
+		$.ajax({
+			url: 'php/backend.php',
+			type: 'POST',
+			data: 'data=' + data,
+			success(result) {
+				if (result != 'FAILED') {
+					var highscoreObj = JSON.parse(result);
+					var highscoreHtml = '';
+					$.each(highscoreObj, function(i, item) {
+						highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
+						//console.log(item.player + ' = ' + item.score);
+					});
+					
+					$('#highscoreTable').html(highscoreHtml);
+				}
+			},
+			error(xhr, status, code) {
+				console.warn('AJAX call returned: ' + status + ': ' + code);
+				$('.msg').html(msg);
+			}
+		});
+	};
+	
+	
+	/**
+	 * Save highscore
+	 */
+	this.saveHighscore = function(currentScore) {
+		'use strict';
+		
+		var currentScore = (typeof(currentScore) !== 'undefined') ? currentScore : score;
+		//var data = Base64.encode('saveScore=1&player=' + player + '&score=' + currentScore);
+		
+		var payload = {
+			'action' : 'saveScore',
+			'player' : player,
+			'score'  : currentScore
+		};
+		
+		var json   = JSON.stringify(payload);
+		var data   = Base64.encode(json);
+		var msg    = 'Highscore not saved!';
+		var player = 'Player';
+			
+		$.ajax({
+			url: 'php/backend.php',
+			type: 'POST',
+			data: 'data=' + data,
+			success(result) {
+				if (result == 'OK') {
+					msg = 'Highscore saved!';
+				} else {
+					// Save score in LocalDB if database connection failed.
+					gameData = {
+						force2d: force2d,
+						music: musicPlaying,
+						highscore: currentScore
+					};
+						
+					wade.storeLocalObject(dataNames.data, gameData);
+				}
+				
+				$('.msg').html(msg);
+			},
+			error(xhr, status, code) {
+				console.warn('saveHighscore() returned: ' + status + ': ' + code);
+				$('.msg').html(msg);
+			}
+		});
+	};
+	
 	
 	/**
 	 * Start game function.
@@ -651,7 +774,7 @@ var App = function() {
 			// Reset fire rate.
 			fireRateTemp = fireRate;
 
-			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
+			// Mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
 		
 			// Turbo fire!
 			if (wade.isMouseDown(2) && sissy) {
@@ -734,9 +857,12 @@ var App = function() {
 				}
 			}
 
-			// Increase level and health every 1000 points.
-			if (Math.floor(score / 1000) > level -1 && level < 5) {
+			if (Math.floor(score / divisor) > level -1 && level < 5) {
+				// Increase score required to fill up health (e.g. level 1 = 1.000, level 2 = 10.000, level 3 = 100.000, ...).
+				divisor = divisor * Math.pow(10, level);
+
 				level += 1;
+
 				if (!sissy) {
 					playerHealth = 100;
 				}
@@ -765,7 +891,7 @@ var App = function() {
 			// Draw updated health, level and score.
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
-			scoreCounter.getSprite().setText(Math.floor(score));
+			scoreCounter.getSprite().setText(Math.floor(score) + ', Left: ' + (divisor - Math.floor(score)));
 		}, 'fire');
 
 
@@ -848,6 +974,7 @@ var App = function() {
 						highscore: score
 					};
 					
+					//wade.app.saveHighscore(score);
 					wade.storeLocalObject(dataNames.data, gameData);
 				}
 
@@ -857,7 +984,12 @@ var App = function() {
 					if (!explosionAnimation.isPlaying()) {
 						// Reset game state.
 						gameStarted = false;
-						
+
+						// Stop in-game music and play menu music.
+						if (musicPlaying) {
+							wade.app.musicOn();
+						}
+
 						// Clear interval and timeouts.
 						clearInterval(gameOverInterval);
 						clearTimeout(nextEnemy);
@@ -886,6 +1018,11 @@ var App = function() {
 			fireRate = 4;
 			fireDamage = 200;
 			gameStarted = true;
+
+			// Stop menu music and play in-game music.
+			if (musicPlaying) {
+				wade.app.musicOn();
+			}
 		}
 		
 		// Add a score counter
@@ -923,45 +1060,70 @@ var App = function() {
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 
+	
 	/**
 	 * Wrapper around pause functions.
 	 */
 	this.pauseGame = function() {
-		wade.pauseSimulation();
-		clearTimeout(nextEnemy);
+		// Don't spawn asteroids on main screen if window has no focus.
 		clearTimeout(nextAsteroid);
-		wade.app.onMouseMove = null;
-		wade.addSceneObject(pauseSpriteObj);
-		gameObj.style.cursor = 'default';
+		
+		// Pause music.
+		wade.app.musicOff();
+
+		if (gameStarted) {
+			// Don't spawn enemies.
+			clearTimeout(nextEnemy);
+			
+			// Don't move ship.
+			wade.app.onMouseMove = null;
+			
+			// Show PAUSED message.
+			wade.addSceneObject(pauseSpriteObj);
+			
+			// Show mouse cursor.
+			gameObj.style.cursor = 'default';
+		}
+
+		// Finally pause simulation. Has to be done after clearing spawn-timeouts.
+		wade.pauseSimulation();
 		
 		return false;
 	};
+	
 	
 	/**
 	 * Check for focus loss (e.g. ich the user tabs/clicks away).
 	 */
 	$(window).blur(function() {
+		console.log('Game paused due to focus loss.');
+		wade.app.pauseGame();
+		
 		if (gameStarted && !gamePaused) {
-			console.log('Game paused due to focus loss.');
 			gamePaused = true;
-			wade.app.pauseGame();
-		} else {
-			// Don't spawn asteroids on main screen if window has no focus.
-			if (!gameStarted) {
-				console.log('Asteroid timeout cleared due to focus loss.');
-				clearTimeout(nextAsteroid);
-			}
 		}
 		
 		return false;
 	});
+	
 	
 	/**
 	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
 	 */
 	$(window).focus(function() {
 		if (!gameStarted) {
+			console.log('Game resumed due to focus gain.');
+			
+			// Spawn asteroids.
 			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+
+			// Resume music.
+			if (musicPlaying) {
+				wade.app.musicOn();
+			}
+			
+			// Resume simulation.
+			wade.resumeSimulation();
 		}
 	});
 
@@ -975,14 +1137,20 @@ var App = function() {
 			gamePaused = !gamePaused;
 
 			if (gamePaused) {
-				//console.log('Game paused by user.');
+				console.log('Game paused by user.');
 				wade.app.pauseGame();
 			} else {
-				//console.log('Game resumed by user.');
+				console.log('Game resumed by user.');
 				gameObj.style.cursor = 'none';
 				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 				wade.removeSceneObject(pauseSpriteObj);
+				
+				// Resume music.
+				if (musicPlaying) {
+					wade.app.musicOn();
+				}
+				
 				wade.resumeSimulation();
 				wade.app.onMouseMove = function(eventData) {
 					if (typeof(ship) !== 'undefined') {
@@ -1212,46 +1380,71 @@ var App = function() {
 
 	
 	/**
+	 * Start playing music
+	 */
+	this.musicOn = function() {
+		if (loopUid > -1) {
+			wade.stopAudio(loopUid);
+		} else {
+			// Fallback if no uid is available for whatever reason.
+			wade.stopAudio();
+		}
+		
+		if (gameStarted) {
+			loopUid = wade.playAudio(sounds.loop, true);	
+		} else {
+			loopUid = wade.playAudio(sounds.menu, true);
+		}
+
+		// On error
+		if (loopUid < 0) {
+			toggleMusicBtn.removeClass('music-on');
+			toggleMusicBtn.addClass('music-off');
+			toggleMusicTitle.title = 'Enable music';
+			musicPlaying = false;
+		}
+
+		return false;
+	};
+	
+	
+	/**
+	 * Stop playing music
+	 * 
+	 * Does NOT work in IE, because IE is a shitty browser and does not support stopping audio streams.
+	 */
+	this.musicOff = function() {
+		if (loopUid > -1) {
+			wade.stopAudio(loopUid);
+		} else {
+			// Fallback if no uid is available for whatever reason.
+			wade.stopAudio();
+		}
+		
+		return false;
+	};
+	
+	
+	/**
 	 * Toogle background music
 	 */
 	this.toggleMusic = function() {
 		if (musicPlaying) {
 			musicPlaying = false;
+			
 			toggleMusicBtn.removeClass('music-on');
 			toggleMusicBtn.addClass('music-off');
 			toggleMusicTitle.title = 'Enable music';
 
-			if (MSIE) {
-				// Workaround for IE to stop the music, because he doesn't support stopping audio streams.
-				gameData = {
-					force2d: force2d,
-					music: musicPlaying,
-					highscore: oldHighScore
-				};
-				wade.storeLocalObject(dataNames.data, gameData);
-				location.reload();
-			} else {
-				if (loopUid > -1) {
-					wade.stopAudio(loopUid);
-				} else {
-					// Fallback if no uid is available for whatever reason.
-					wade.stopAudio();
-				}
-			}
+			wade.app.musicOff();
 		} else {
-			// Fallback if no uid is available for whatever reason.
-			if (loopUid > -1) {
-				wade.stopAudio(loopUid);
-			} else {
-				// Fallback if no uid is available for whatever reason.
-				wade.stopAudio();
-			}
-
-			loopUid = wade.playAudio(sounds.loop, true);
 			musicPlaying = true;
+
 			toggleMusicBtn.removeClass('music-off');
 			toggleMusicBtn.addClass('music-on');
 			toggleMusicTitle.title = 'Disable music';
+
+			wade.app.musicOn();
 		}
 		
 		gameData = {
