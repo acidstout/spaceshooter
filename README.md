@@ -12,12 +12,20 @@ A simple space shooter based on the WADE game engine. Separated in five tiers wi
 - Multiple enemy types with different strength and fire rate
 - Basic health, score and level logic
 - Per-pixel collision logic
+- Highscore table
 
 ## Usage
-Use your mouse to move the spaceship around and click to fire. Every 1000 points your health and level is increased. Required hit points vary from enemy to enemy. Also larger asteroids must be shot multiple times before they are destroyed. In general the more shots required, the higher will be the reward.
+Use your mouse to move the spaceship around and click to fire. Your health gets restored and your fire rate is increased as you advance to the next level. Required hit points vary from enemy to enemy. Also larger asteroids must be shot multiple times before they are destroyed. In general the more shots required, the higher will be the reward.
 
 ## Compatibility
 The game will run flawlessly in any modern browser. Even older browsers should work pretty well, if they support the 2d canvas feature. No WebGL support required, but supported and used by default. Audio (in-game sounds and music) is supported by all modern browsers, but the Internet Explorer stops the background music upon page reload. However, you may turn it on manually by clicking the respective button in the top right.
 
+## Installation
+- Enter your database credentials into the connect.sample.php file and rename it to connect.php.
+- Initialize your database by executing create_schema.sql in the sql folder.
+- Open up your web browser and visit the URL where your deployed the game to.
+
+You can also run the game without a database. In such case the highscore table won't work and the highest score is stored in the LocalDB of your browser.
+
 ## Demo
-Play the latest version of the game on https://rekow.ch/overkill/ for free.
+Play the latest stable version of the game on https://rekow.ch/overkill/ for free.

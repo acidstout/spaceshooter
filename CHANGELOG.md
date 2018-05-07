@@ -41,3 +41,9 @@
 - updated window title
 - hid cheat-mode
 - fixed issue with setting identifier being minified
+- updated to WADE 3.8.1
+- added highscore table (requires an SQL database; makes use of my ADOdb compatible PDO wrapper class)
+- updated menu music
+- updated audio handling
+- updated scoring logic
+- added counter showing remaining points until next level (energy refill)
