@@ -1,4 +1,5 @@
-##Changes
+## Changes
+
 **Version 1.1.3**
 - hopefully fixed blank screen issue (e.g. "Warning: it isn't possible to render this frame").
 - re-arranged functions
