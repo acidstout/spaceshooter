@@ -11,7 +11,7 @@
 // TODO:
 //		- make player name editable
 
-var version = '1.1.2';
+var version = '1.1.3';
 
 /**
  * Functions to encode/decode Base64.
@@ -138,88 +138,6 @@ var Base64 = {
 
 
 /**
- * Return random integer between min and max values.
- *
- * @return random integer
- */
-function getRandomInt(min, max) {
-	'use strict';
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-/**
- * Surround strings or objects which contain strings with padding.
- * 
- * @param obj
- * @returns entity of input type
- */
-function padStrings(obj) {
-	'use strict';
-	var padding = '       ';
-	var tmp;
-	
-	if (typeof(obj) === 'object') {
-		tmp = {};
-		for (var i in obj) {
-			if ({}.hasOwnProperty.call(obj, i)) {
-				tmp[i] = padding + obj[i] + padding;
-			}
-		}
-	} else {
-		tmp = padding + obj + padding;
-	}
-	return tmp;
-}
-
-
-/**
- * Handle mouse move and animation of ship.
- * 
- * @param eventData
- */
-function handleMouseMove(ship, images, eventData) {
-	'use strict';
-	// Get position and sprite of ship.
-	var shipPosition = ship.getPosition();
-	var sprite = ship.getSprite();
-	var animation = null;
-	
-	// Decide direction of animation
-	if (shipPosition.x < 0) {
-		if (shipPosition.x > eventData.screenPosition.x) {
-			//console.log('left');
-			animation = new Animation(images.flyLeft, 5, 1, 30);
-		} else if (shipPosition.x < eventData.screenPosition.x) {
-			//console.log('right');
-			animation = new Animation(images.flyRight, 5, 1, 30);
-		}
-	} else if (shipPosition.x > 0) {
-		if (shipPosition.x < eventData.screenPosition.x) {
-			//console.log('right');
-			animation = new Animation(images.flyRight, 5, 1, 30);
-		} else if (shipPosition.x > eventData.screenPosition.x) {
-			//console.log('left');
-			animation = new Animation(images.flyLeft, 5, 1, 30);
-		}
-	}			
-
-	// Animate ship
-	if (animation !== null) {
-		sprite.addAnimation('fly', animation);
-		ship.playAnimation('fly');
-	
-		ship.onAnimationEnd = function() {
-			sprite.setImageFile(images.ship);
-		};
-	}
-	
-	// Finally move ship to new position.
-	return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
-}
-
-
-/**
  * Main function of app
  *
  */
@@ -275,6 +193,7 @@ var App = function() {
 	// Get highscores.
 	var oldHighScore   = (gameData && gameData.highscore) || 0;
 	
+	// Images, animations, music and sounds
 	var images = {
 		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
@@ -380,10 +299,72 @@ var App = function() {
 	
 	$('#version').text(version + ', WADE ' + wade.getVersion());
 	
+	
+	/**
+	 * Check for focus loss (e.g. ich the user tabs/clicks away).
+	 */
+	$(window).blur(function() {
+		console.log('Game paused due to focus loss.');
+		wade.app.pauseGame();
+		
+		if (gameStarted && !gamePaused) {
+			gamePaused = true;
+		}
+		
+		return false;
+	});
+
+
+	/**
+	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
+	 */
+	$(window).focus(function() {
+		if (!gameStarted) {
+			console.log('Game resumed due to focus gain.');
+			
+			// Spawn asteroids.
+			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+
+			// Resume music.
+			if (musicPlaying) {
+				wade.app.musicOn();
+			}
+			
+			// Resume simulation.
+			wade.resumeSimulation();
+		}
+	});
+
+	
 	// Prevent the game to be run in an iframe.
 	wade.preventIframe();
 	wade.setLoadingBar(true, {x: 0 , y: 0 }, '#333333', '#222222');
 	wade.setLoadingImages('../img/loading.svg');
+
+	
+	/**
+	 * Surround strings or objects which contain strings with padding.
+	 * 
+	 * @param obj
+	 * @returns entity of input type
+	 */
+	this.padStrings = function(obj) {
+		var padding = '       ';
+		var tmp;
+		
+		if (typeof(obj) === 'object') {
+			tmp = {};
+			for (var i in obj) {
+				if ({}.hasOwnProperty.call(obj, i)) {
+					tmp[i] = padding + obj[i] + padding;
+				}
+			}
+		} else {
+			tmp = padding + obj + padding;
+		}
+		return tmp;
+	};
+
 	
 	/**
 	 * Load images and sounds. Also set screen size.
@@ -392,22 +373,32 @@ var App = function() {
 		// Counter
 		var i = 0;
 
-		// Images
-		wade.loadImage(images.logo);
-		wade.loadImage(images.ship);
-		
-		// Bullets
-		wade.loadImage(images.shipBullet);
-		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
-			wade.loadImage(images.enemyBullets[i].file);
+		// Asteroids
+		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
+			wade.loadImage(images.asteroids[i]);
 		}
+
+		// Logo
+		wade.loadImage(images.logo);
 		
 		// Animation
 		for (i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
-		
-		// Fly left/right lean animation
+
+		// Bullets
+		wade.loadImage(images.shipBullet);
+		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
+			wade.loadImage(images.enemyBullets[i].file);
+		}
+
+		// Enemies
+		for (i = 0; i < Object.keys(images.enemies).length; i++) {
+			wade.loadImage(images.enemies[i]);
+		}
+
+		// Ship and fly left/right lean animation
+		wade.loadImage(images.ship);
 		wade.loadImage(images.flyLeft);
 		wade.loadImage(images.flyRight);
 
@@ -416,16 +407,6 @@ var App = function() {
 		wade.loadImage(images.levelIcon);
 		wade.loadImage(images.scoreIcon);
 		
-		// Enemies
-		for (i = 0; i < Object.keys(images.enemies).length; i++) {
-			wade.loadImage(images.enemies[i]);
-		}
-		
-		// Asteroids
-		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
-			wade.loadImage(images.asteroids[i]);
-		}
-
 		// Sounds. Workaround for old browsers which do not support WebAudio.
 		var loadAudioFunction = wade.isWebAudioSupported()? 'loadAudio' : 'preloadAudio';
 		wade[loadAudioFunction](sounds.shoot);
@@ -433,6 +414,14 @@ var App = function() {
 		wade[loadAudioFunction](sounds.explode);
 		wade[loadAudioFunction](sounds.loop);
 		wade[loadAudioFunction](sounds.menu);
+		
+		var checkLoadingStatus = null;
+		checkLoadingStatus = setInterval(function() {
+			console.log('Loaded ' + Math.round(wade.getLoadingPercentage()) + '% of data.');
+			if (wade.getLoadingPercentage() >= 100) {
+				clearInterval(checkLoadingStatus);
+			}
+		}, 1000);
 	};
 
 	
@@ -448,6 +437,11 @@ var App = function() {
 
 		// Always set render-mode to 2D canvas first ...
 		wade.setLayerRenderMode(defaultLayerId, '2d');
+
+		// Disable quadtree optimization, because we have quite a lot of particles.
+		// Gets re-enabled after initializing everything else.
+		wade.useQuadtree(defaultLayerId, false);
+
 		toggleRendererBtn.removeClass('fa-toggle-on');
 		toggleRendererBtn.addClass('fa-toggle-off');
 		toggleRendererTitle.title = 'Enable WebGL';
@@ -455,12 +449,14 @@ var App = function() {
 		// ... before we set it to WebGL. This eliminates ugly fonts.
 		if (!force2d) {
 			wade.setLayerRenderMode(defaultLayerId, 'webgl');
+			
+			// Update WebGL toggle icon to reflect current status.
 			toggleRendererBtn.removeClass('fa-toggle-off');
 			toggleRendererBtn.addClass('fa-toggle-on');
 			toggleRendererTitle.title = 'Disable WebGL';
 		}
 
-		
+
 		// Check whether to play background music.
 		if (wade.isWebAudioSupported()) {
 			musicPlaying = (gameData && gameData.music) || musicPlaying;
@@ -473,6 +469,7 @@ var App = function() {
 			// Just in case ... ;)
 			musicPlaying = false;
 		}
+		
 		
 		// Set screen size to current size of viewport.
 		wade.setMinScreenSize($(window).width(), $(window).height());
@@ -487,6 +484,7 @@ var App = function() {
 			//wade.setMaxScreenSize(wade.getMaxScreenWidth(), wade.getMaxScreenHeight());
 		}
 
+		
 		// Get default renderer.
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
 		
@@ -523,7 +521,7 @@ var App = function() {
 		
 		// Ugly workaround for cut-off texts when using WebGL.
 		if (defaultRenderer === 'webgl') {
-			menuTexts = padStrings(menuTexts);
+			menuTexts = wade.app.padStrings(menuTexts);
 		}
 		
 		
@@ -534,6 +532,7 @@ var App = function() {
 		
 		clickToStart.addSprite(clickText, { y: 320 });
 
+		
 		// Get current highscore.
 		wade.app.getHighestScore(score, clickToStart, menuTexts);
 
@@ -550,7 +549,7 @@ var App = function() {
 			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
 			scoreMsg = scoreMsg.replace('%i', score);
 			if (defaultRenderer === 'webgl') {
-				scoreMsg = padStrings(scoreMsg);
+				scoreMsg = wade.app.padStrings(scoreMsg);
 			}
 
 			clickToStart.addSprite(new TextSprite(scoreMsg, '24pt Highspeed', 'white', 'center'), { y: 120 });
@@ -568,7 +567,7 @@ var App = function() {
 				
 				// Again that ugly thing.
 				if (defaultRenderer === 'webgl') {
-					highscoreMessage = padStrings(highscoreMessage);
+					highscoreMessage = wade.app.padStrings(highscoreMessage);
 				}
 				
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
@@ -598,9 +597,16 @@ var App = function() {
 		// Show main menu.
 		wade.addSceneObject(clickToStart);
 		
-		
-		// Initialize asteroids on the main screen.
-		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+
+		// Initialize asteroids on the main screen. Prevents the use of images which are not loaded, yet.
+		var initAsteroidsInterval = null; 
+		initAsteroidsInterval = setTimeout(function() {
+			if (wade.getLoadingPercentage() >= 100) {
+				console.log('Initializing asteroids on main screen.');
+				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+				clearInterval(initAsteroidsInterval);
+			}
+		}, 1000);
 		
 		
 		// Decide whether to play music or not.
@@ -624,8 +630,9 @@ var App = function() {
 				wade.removeSceneObject(clickToStart);
 				wade.clearScene();
 				wade.removeUnusedLayers([ 1 ]);	// Remove all unused layers, but layer 1.
-				wade.app.startGame();
+				wade.clearCanvas(defaultLayerId);
 				wade.app.onMouseDown = 0;
+				wade.app.startGame();
 			}
 		};
 	};
@@ -637,8 +644,8 @@ var App = function() {
 	this.getHighestScore = function(score, clickToStart, menuTexts) {
 		var ajaxInterval = setInterval(function() {
 			var payload = {
-					'action' : 'getHighestScore'
-				}
+				'action' : 'getHighestScore'
+			};
 
 			var json = JSON.stringify(payload);
 			var data = Base64.encode(json);
@@ -676,10 +683,9 @@ var App = function() {
 	 * Load highscore
 	 */
 	this.loadHighscore = function() {
-		'use strict';
 		var payload = {
 			'action' : 'loadScore'
-		}
+		};
 
 		var json          = JSON.stringify(payload);
 		var data          = Base64.encode(json);
@@ -714,9 +720,7 @@ var App = function() {
 	 * Save highscore
 	 */
 	this.saveHighscore = function(currentScore) {
-		'use strict';
-		
-		var currentScore = (typeof(currentScore) !== 'undefined') ? currentScore : score;
+		currentScore = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 		//var data = Base64.encode('saveScore=1&player=' + player + '&score=' + currentScore);
 		
 		var payload = {
@@ -759,9 +763,57 @@ var App = function() {
 	
 	
 	/**
+	 * Handle mouse move and animation of ship.
+	 * 
+	 * @param eventData
+	 */
+	this.handleMouseMove = function(ship, images, eventData) {
+		// Get position and sprite of ship.
+		var shipPosition = ship.getPosition();
+		var sprite = ship.getSprite();
+		var animation = null;
+		
+		// Decide direction of animation
+		if (shipPosition.x < 0) {
+			if (shipPosition.x > eventData.screenPosition.x) {
+				//console.log('left');
+				animation = new Animation(images.flyLeft, 5, 1, 30);
+			} else if (shipPosition.x < eventData.screenPosition.x) {
+				//console.log('right');
+				animation = new Animation(images.flyRight, 5, 1, 30);
+			}
+		} else if (shipPosition.x > 0) {
+			if (shipPosition.x < eventData.screenPosition.x) {
+				//console.log('right');
+				animation = new Animation(images.flyRight, 5, 1, 30);
+			} else if (shipPosition.x > eventData.screenPosition.x) {
+				//console.log('left');
+				animation = new Animation(images.flyLeft, 5, 1, 30);
+			}
+		}			
+
+		// Animate ship
+		if (animation !== null) {
+			sprite.addAnimation('fly', animation);
+			ship.playAnimation('fly');
+		
+			ship.onAnimationEnd = function() {
+				sprite.setImageFile(images.ship);
+			};
+		}
+		
+		// Finally move ship to new position.
+		return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
+	};
+
+	
+	/**
 	 * Start game function.
 	 */
 	this.startGame = function() {
+		console.log('Re-enabling quadtree optimizations.');
+		wade.useQuadtree(defaultLayerId, true);
+
 		var sprite = new Sprite(images.ship);
 		var mousePosition = wade.getMousePosition();
 		ship = new SceneObject(sprite, 0, mousePosition.x, mousePosition.y);
@@ -1093,42 +1145,6 @@ var App = function() {
 	
 	
 	/**
-	 * Check for focus loss (e.g. ich the user tabs/clicks away).
-	 */
-	$(window).blur(function() {
-		console.log('Game paused due to focus loss.');
-		wade.app.pauseGame();
-		
-		if (gameStarted && !gamePaused) {
-			gamePaused = true;
-		}
-		
-		return false;
-	});
-	
-	
-	/**
-	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
-	 */
-	$(window).focus(function() {
-		if (!gameStarted) {
-			console.log('Game resumed due to focus gain.');
-			
-			// Spawn asteroids.
-			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
-
-			// Resume music.
-			if (musicPlaying) {
-				wade.app.musicOn();
-			}
-			
-			// Resume simulation.
-			wade.resumeSimulation();
-		}
-	});
-
-	
-	/**
 	 * Check if space key has been pressed. Toggles game to pause/resume.
 	 */
 	this.onKeyDown = function(eventData) {
@@ -1154,7 +1170,7 @@ var App = function() {
 				wade.resumeSimulation();
 				wade.app.onMouseMove = function(eventData) {
 					if (typeof(ship) !== 'undefined') {
-						handleMouseMove(ship, images, eventData);
+						wade.app.handleMouseMove(ship, images, eventData);
 					}
 				};
 			}
@@ -1169,7 +1185,7 @@ var App = function() {
 	 */
 	this.onMouseMove = function(eventData) {
 		if (typeof(ship) !== 'undefined') {
-			return handleMouseMove(ship, images, eventData);
+			return wade.app.handleMouseMove(ship, images, eventData);
 		}
 	};
 
@@ -1221,6 +1237,16 @@ var App = function() {
 	
 	
 	/**
+	 * Return random integer between min and max values.
+	 *
+	 * @return random integer
+	 */
+	this.getRandomInt = function(min, max) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	};
+	
+	
+	/**
 	 * Spawn asteroid.
 	 */
 	this.spawnAsteroid = function() {
@@ -1228,7 +1254,7 @@ var App = function() {
 		var sprite;
 		
 		// Select random image of asteroid as sprite.
-		var asteroidId = getRandomInt(0, 9);
+		var asteroidId = wade.app.getRandomInt(0, 9);
 		sprite = new Sprite(images.asteroids[asteroidId]);
 		
 		// Calculate start and end coordinates.
@@ -1272,7 +1298,7 @@ var App = function() {
 		}
 		
 		// Select random image of enemy as sprite.
-		var enemyId = getRandomInt(0, maxEnemy);
+		var enemyId = wade.app.getRandomInt(0, maxEnemy);
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
