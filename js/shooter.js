@@ -458,17 +458,12 @@ var App = function() {
 
 
 		// Check whether to play background music.
-//		if (wade.isWebAudioSupported()) {
-			musicPlaying = (gameData && gameData.music) || musicPlaying;
-			if (musicPlaying) {
-				toggleMusicBtn.removeClass('music-off');
-				toggleMusicBtn.addClass('music-on');
-				toggleMusicTitle.title = 'Disable music';
-			}
-//		} else {
-			// Just in case ... ;)
-//			musicPlaying = false;
-//		}
+		musicPlaying = (gameData && gameData.music) || musicPlaying;
+		if (musicPlaying) {
+			toggleMusicBtn.removeClass('music-off');
+			toggleMusicBtn.addClass('music-on');
+			toggleMusicTitle.title = 'Disable music';
+		}
 		
 		
 		// Set screen size to current size of viewport.
@@ -610,11 +605,9 @@ var App = function() {
 		
 		
 		// Decide whether to play music or not.
-//		if (wade.isWebAudioSupported()) {
-			if (musicPlaying) {
-				wade.app.musicOn();
-			}
-//		}
+		if (musicPlaying) {
+			wade.app.musicOn();
+		}
 
 		
 		/**
