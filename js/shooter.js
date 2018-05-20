@@ -11,7 +11,7 @@
 // TODO:
 //		- make player name editable
 
-var version = '1.1.3';
+var version = '1.1.4';
 
 /**
  * Functions to encode/decode Base64.
@@ -458,17 +458,17 @@ var App = function() {
 
 
 		// Check whether to play background music.
-		if (wade.isWebAudioSupported()) {
+//		if (wade.isWebAudioSupported()) {
 			musicPlaying = (gameData && gameData.music) || musicPlaying;
 			if (musicPlaying) {
 				toggleMusicBtn.removeClass('music-off');
 				toggleMusicBtn.addClass('music-on');
 				toggleMusicTitle.title = 'Disable music';
 			}
-		} else {
+//		} else {
 			// Just in case ... ;)
-			musicPlaying = false;
-		}
+//			musicPlaying = false;
+//		}
 		
 		
 		// Set screen size to current size of viewport.
@@ -610,11 +610,11 @@ var App = function() {
 		
 		
 		// Decide whether to play music or not.
-		if (wade.isWebAudioSupported()) {
+//		if (wade.isWebAudioSupported()) {
 			if (musicPlaying) {
 				wade.app.musicOn();
 			}
-		}
+//		}
 
 		
 		/**
@@ -719,20 +719,20 @@ var App = function() {
 	/**
 	 * Save highscore
 	 */
-	this.saveHighscore = function(currentScore) {
+	this.saveHighscore = function(currentScore, currentPlayer) {
 		currentScore = (typeof(currentScore) !== 'undefined') ? currentScore : score;
-		//var data = Base64.encode('saveScore=1&player=' + player + '&score=' + currentScore);
+		currentPlayer = (typeof(currentPlayer) !== 'undefined') ? currentPlayer : 'Player';
+
+		var msg    = 'Highscore not saved!';
 		
 		var payload = {
 			'action' : 'saveScore',
-			'player' : player,
+			'player' : currentPlayer,
 			'score'  : currentScore
 		};
 		
 		var json   = JSON.stringify(payload);
 		var data   = Base64.encode(json);
-		var msg    = 'Highscore not saved!';
-		var player = 'Player';
 			
 		$.ajax({
 			url: 'php/backend.php',

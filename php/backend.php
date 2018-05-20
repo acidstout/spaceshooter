@@ -132,13 +132,27 @@ function saveScore($db, $player, $score) {
 	$score = preg_replace('/\D/', '', $score);
 	$result = 'FAILED';
 	$min_score = 0;
+	$count_score = 0;
 	
 	$sql = "SELECT MIN(score) AS min_score FROM highscores LIMIT 1;";
 	if ($db->query($sql)) {
 		$min_score = $db->getOne();
+		if (empty($min_score)) {
+			$min_score = 0;
+		}
 	}
 	
-	if ($score > $min_score) {
+	// We could use SQL_CALC_FOUND_ROWS here aswell, but it doesn't affect performance, because we don't use complex queries.
+	$sql = "SELECT COUNT(score) as count_score FROM highscores;";
+	if ($db->query($sql)) {
+		$count_score = $db->getOne();
+		if (empty($count_score)) {
+			$count_score = 0;
+		}
+	}
+
+	// Insert new score into database if it's higher than the lowest score or if less than ten entries were found.
+	if (($score > $min_score) || ($count_score < 10)) {
 		$sql = "INSERT INTO highscores (player, score) VALUES (?, ?);";
 		$values = array($player, $score);
 		

@@ -1,5 +1,9 @@
 ## Changes
 
+**Version 1.1.4**
+- fixed issue where highscore wasn't saved
+- due to changes by Google in Chromium based browsers you may need to reload the page by hitting the F5 key in order to enable audio playback.
+
 **Version 1.1.3**
 - hopefully fixed blank screen issue (e.g. "Warning: it isn't possible to render this frame").
 - re-arranged functions
