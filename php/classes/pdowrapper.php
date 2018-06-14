@@ -38,6 +38,7 @@
  *
  * 
  * @author nrekow
+ * @version 1.0
  *
  */
 
@@ -53,6 +54,7 @@ interface WrapperFunctions {
 	public function delete($query, $data);
 	public function getOne($query = null, $data = null);
 	public function getAll($query = null, $data = null);
+	public function getLastId();
 	public function query($query, $data = null);
 }
 
@@ -60,6 +62,7 @@ interface WrapperFunctions {
 class Wrapper extends PDO implements WrapperFunctions {
 	private $connection = null;
 	private $database_error = null;
+	private $database_driver = null;
 	private $query = null;
 	private $stmt = null;
 	
@@ -84,6 +87,8 @@ class Wrapper extends PDO implements WrapperFunctions {
 			PDO::ATTR_EMULATE_PREPARES   => false
 	]) {
 		$dsn = $driver . 'host=' . $host . ';dbname=' . $database . ';charset=' . $charset;
+		
+		$this->database_driver = $driver;
 		
 		try {
 			$this->connection = new PDO($dsn, $user, $pass, $opt);
@@ -209,6 +214,26 @@ class Wrapper extends PDO implements WrapperFunctions {
 		}
 		
 		return ($this->stmt->fetchAll());
+	}
+	
+	
+	/**
+	 * Fetches id of last INSERT statement.
+	 *
+	 * @param object $db
+	 * @return string|boolean
+	 */
+	public function getLastId() {
+		// Default to MySQL function:
+		$sql = "SELECT LAST_INSERT_ID();";
+		
+		// Exception for PostgreSQL.
+		// Better use "INSERT ... RETURNING id" instead.
+		if (strpos($this->database_driver, 'postgres') !== false) {
+			$sql = "SELECT LASTVAL();";
+		}
+		
+		return $db->getOne($sql);
 	}
 	
 	
