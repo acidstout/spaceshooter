@@ -105,9 +105,17 @@ function loadScore($db) {
 		$results = $db->getAll();
 		$tmp = array();
 
+		// Virtually fill empty positions. 
+		$count = count($results);
+		if ($count < 10) {
+			for ($i = 0; $i < $count; $i++) {
+				$results[] = array('player' => 'player', 'score' => 0);
+			}
+		}
+		
 		foreach ($results as $result) {
 			$tmp[] = array(
-				'player' => truncate($result['player'], 16),
+				'player' => truncate($result['player'], 20),
 				'score' => $result['score']
 			);
 		}
@@ -162,8 +170,10 @@ function isHighscore($db, $score) {
  */
 function saveScore($db, $player, $score) {
 	$player = preg_replace('/[^a-zA-Z0-9\s]/', '', $player);
+	$player = truncate($player, 20);
 	$score  = preg_replace('/\D/', '', $score);
 	$result = 'FAILED';
+	
 	if (isHighscore($db, $score)) {
 		$sql = "INSERT INTO highscores (player, score) VALUES (?, ?);";
 		$values = array($player, $score);

@@ -183,8 +183,8 @@ var App = function() {
 	$(window).blur(function() {
 		if (gameStarted && !gamePaused) {
 			console.log('Game paused due to focus loss.');
-			wade.app.pauseGame();
 		}
+		wade.app.pauseGame();
 	});
 
 
@@ -578,7 +578,7 @@ var App = function() {
 			data: 'data=' + data,
 			success(result) {
 				if (result != 'FAILED') {
-					//console.log('Score: ' + currentScore);
+					console.log('Score: ' + currentScore);
 					
 					// Will contain our resulting HTML.
 					var highscoreHtml = '';
@@ -598,7 +598,7 @@ var App = function() {
 					// Iterate over each entry of the object.
 					$.each(highscoreObj, function(i, item) {
 						// Add input field if player's score is higher than the current entry.
-						if (currentScore >= item.score && !hasInput) {
+						if (currentScore > 0 && currentScore >= item.score && !hasInput) {
 							highscoreHtml += highscoreInputField;
 							hasInput = true;
 						}
