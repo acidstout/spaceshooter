@@ -107,10 +107,9 @@ function loadScore($db) {
 
 		// Virtually fill empty positions. 
 		$count = count($results);
-		if ($count < 10) {
-			for ($i = 0; $i < $count; $i++) {
-				$results[] = array('player' => 'player', 'score' => 0);
-			}
+		while ($count < 10) {
+			$results[] = array('player' => 'player', 'score' => 0);
+			$count++;
 		}
 		
 		foreach ($results as $result) {

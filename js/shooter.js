@@ -578,7 +578,7 @@ var App = function() {
 			data: 'data=' + data,
 			success(result) {
 				if (result != 'FAILED') {
-					console.log('Score: ' + currentScore);
+					//console.log('Score: ' + currentScore);
 					
 					// Will contain our resulting HTML.
 					var highscoreHtml = '';
