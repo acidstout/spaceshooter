@@ -97,6 +97,7 @@ function getBrowserVersion(browserEngineRegEx, parseVersion) {
 	return rv;
 }
 
+
 /**
  * Init game.
  */
@@ -140,10 +141,12 @@ $(function() {
 	});
 	
 	$('#highscoreWrapper').click(function() {
-		$('#highscoreWrapper').fadeOut(400, 'swing', function() {
-			$('#highscoreWrapper').css('display', 'none');
-		});
-		
+		// Hide highscore table only if the player didn't score.
+		if ($('#playerName').length === 0) {
+			$('#highscoreWrapper').fadeOut(400, 'swing', function() {
+				$('#highscoreWrapper').css('display', 'none');
+			});
+		}
 	});
 	
 	// Initialize parallax starfield.

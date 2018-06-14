@@ -144,7 +144,7 @@ function isHighscore($db, $score) {
 	if ($db->query($sql)) {
 		$results = $db->getAll();
 		
-		if (isset($results[0]['score']) && isset($results[0]['found_rows']) && $score > $results[0]['score'] || $results[0]['found_rows'] < 10) {
+		if (isset($results[0]) && isset($results[0]['score']) && isset($results[0]['found_rows']) && $score > $results[0]['score'] || $results[0]['found_rows'] < 10) {
 			return true;
 		}
 	}
