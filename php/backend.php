@@ -106,7 +106,10 @@ function loadScore($db) {
 		$tmp = array();
 
 		foreach ($results as $result) {
-			$tmp[] = array('player' => truncate($result['player'], 16), 'score' => $result['score']);
+			$tmp[] = array(
+				'player' => truncate($result['player'], 16),
+				'score' => $result['score']
+			);
 		}
 		
 		$results = json_encode($tmp, JSON_UNESCAPED_UNICODE);
@@ -121,6 +124,36 @@ function loadScore($db) {
 
 
 /**
+ * Check if a given score qualifies for being entered into the highscore table.
+ * 
+ * @param object $db
+ * @param int $score
+ * @return boolean
+ */
+function isHighscore($db, $score) {
+	$score = preg_replace('/\D/', '', $score);
+	
+	// This is a workaround to fetch the total row count if a limit is used.
+	// By default COUNT(*) is faster than COUNT(id).
+	$sql = "SELECT score, c.found_rows
+			FROM overkill.highscores
+			JOIN (SELECT COUNT(*) AS found_rows FROM overkill.highscores) AS c
+			ORDER BY score ASC
+			LIMIT 1;";
+	
+	if ($db->query($sql)) {
+		$results = $db->getAll();
+		
+		if (isset($results[0]['score']) && isset($results[0]['found_rows']) && $score > $results[0]['score'] || $results[0]['found_rows'] < 10) {
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+
+/**
  * Save score to highscore table
  * 
  * @param object $db
@@ -129,16 +162,9 @@ function loadScore($db) {
  */
 function saveScore($db, $player, $score) {
 	$player = preg_replace('/[^a-zA-Z0-9\s]/', '', $player);
-	$score = preg_replace('/\D/', '', $score);
+	$score  = preg_replace('/\D/', '', $score);
 	$result = 'FAILED';
-	$min_score = 0;
-	
-	$sql = "SELECT MIN(score) AS min_score FROM highscores LIMIT 1;";
-	if ($db->query($sql)) {
-		$min_score = $db->getOne();
-	}
-	
-	if ($score > $min_score) {
+	if (isHighscore($db, $score)) {
 		$sql = "INSERT INTO highscores (player, score) VALUES (?, ?);";
 		$values = array($player, $score);
 		

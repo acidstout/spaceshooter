@@ -11,7 +11,7 @@
 // TODO:
 //		- make player name editable
 
-var version = '1.1.3';
+var version = '1.1.4';
 
 /**
  * Functions to encode/decode Base64.
@@ -310,8 +310,6 @@ var App = function() {
 		if (gameStarted && !gamePaused) {
 			gamePaused = true;
 		}
-		
-		return false;
 	});
 
 
@@ -460,6 +458,12 @@ var App = function() {
 		// Check whether to play background music.
 		if (wade.isWebAudioSupported()) {
 			musicPlaying = (gameData && gameData.music) || musicPlaying;
+			
+			// Do not show music icon as "enabled" if the browser suspended the AudioContext object.
+			if (wade.getWebAudioContext().state == 'suspended') {
+				musicPlaying = false;
+			}
+			
 			if (musicPlaying) {
 				toggleMusicBtn.removeClass('music-off');
 				toggleMusicBtn.addClass('music-on');
@@ -610,10 +614,8 @@ var App = function() {
 		
 		
 		// Decide whether to play music or not.
-		if (wade.isWebAudioSupported()) {
-			if (musicPlaying) {
-				wade.app.musicOn();
-			}
+		if (musicPlaying) {
+			wade.app.musicOn();
 		}
 
 		
@@ -719,20 +721,20 @@ var App = function() {
 	/**
 	 * Save highscore
 	 */
-	this.saveHighscore = function(currentScore) {
-		currentScore = (typeof(currentScore) !== 'undefined') ? currentScore : score;
-		//var data = Base64.encode('saveScore=1&player=' + player + '&score=' + currentScore);
+	this.saveHighscore = function(currentScore, currentPlayer) {
+		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
+		currentPlayer = (typeof(currentPlayer) !== 'undefined') ? currentPlayer : 'Player';
+
+		var msg = 'Highscore not saved!';
 		
 		var payload = {
 			'action' : 'saveScore',
-			'player' : player,
-			'score'  : currentScore
+			'player' : currentPlayer,
+			'score' : currentScore
 		};
 		
-		var json   = JSON.stringify(payload);
-		var data   = Base64.encode(json);
-		var msg    = 'Highscore not saved!';
-		var player = 'Player';
+		var json = JSON.stringify(payload);
+		var data = Base64.encode(json);
 			
 		$.ajax({
 			url: 'php/backend.php',
@@ -1106,7 +1108,6 @@ var App = function() {
 		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelCounter);
 		
-		
 		// Spawn enemies every two seconds and asteroids every second.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
@@ -1250,6 +1251,13 @@ var App = function() {
 	 * Spawn asteroid.
 	 */
 	this.spawnAsteroid = function() {
+		//console.log('spawnAsteroid, Game paused = ' + gamePaused);
+
+		// Sledge-hammer method to make sure no hidden asteroids will be spawned while the game is paused.
+		if (gamePaused) {
+			return false;
+		}
+		
 		// Create an empty sprite.
 		var sprite;
 		
@@ -1287,6 +1295,13 @@ var App = function() {
 	 * Spawn enemy.
 	 */
 	this.spawnEnemy = function() {
+		//console.log('spawnEnemy, Game paused = ' + gamePaused);
+
+		// Sledge-hammer method to make sure no hidden enemies will be spawned while the game is paused.
+		if (gamePaused) {
+			return false;
+		}
+
 		// Create an empty sprite.
 		var sprite;
 
@@ -1455,6 +1470,15 @@ var App = function() {
 	 * Toogle background music
 	 */
 	this.toggleMusic = function() {
+		var context = wade.getWebAudioContext();
+		
+		// State = "running" or "suspended"
+		if (context.state == 'suspended') {
+			context.resume().then(() => {
+				console.log('Audio context resumed.');
+			});
+		}
+
 		if (musicPlaying) {
 			musicPlaying = false;
 			

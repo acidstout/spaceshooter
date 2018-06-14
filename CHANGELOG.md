@@ -1,5 +1,11 @@
 ## Changes
 
+**Version 1.1.4**
+- updated to WADE 4.0
+- resume AudioContext object on click if is has been paused by the browser when the game is loaded. For details see [here](https://goo.gl/7K7WLu).
+- fixed endless spawning of asteroids on main screen when the browser is minimized or has no focus for some time.
+- fixed player name no being added to JSON.
+
 **Version 1.1.3**
 - hopefully fixed blank screen issue (e.g. "Warning: it isn't possible to render this frame").
 - re-arranged functions
