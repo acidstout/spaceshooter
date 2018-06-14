@@ -164,7 +164,6 @@ function saveScore($db, $player, $score) {
 	$player = preg_replace('/[^a-zA-Z0-9\s]/', '', $player);
 	$score  = preg_replace('/\D/', '', $score);
 	$result = 'FAILED';
-
 	if (isHighscore($db, $score)) {
 		$sql = "INSERT INTO highscores (player, score) VALUES (?, ?);";
 		$values = array($player, $score);

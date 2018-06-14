@@ -614,10 +614,8 @@ var App = function() {
 		
 		
 		// Decide whether to play music or not.
-		if (wade.isWebAudioSupported()) {
-			if (musicPlaying) {
-				wade.app.musicOn();
-			}
+		if (musicPlaying) {
+			wade.app.musicOn();
 		}
 
 		
@@ -723,20 +721,20 @@ var App = function() {
 	/**
 	 * Save highscore
 	 */
-	this.saveHighscore = function(currentScore) {
-		currentScore = (typeof(currentScore) !== 'undefined') ? currentScore : score;
-		
-		var msg    = 'Highscore not saved!';
-		var player = 'Player';
+	this.saveHighscore = function(currentScore, currentPlayer) {
+		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
+		currentPlayer = (typeof(currentPlayer) !== 'undefined') ? currentPlayer : 'Player';
 
+		var msg = 'Highscore not saved!';
+		
 		var payload = {
 			'action' : 'saveScore',
-			'player' : player,
-			'score'  : currentScore
+			'player' : currentPlayer,
+			'score' : currentScore
 		};
 		
-		var json   = JSON.stringify(payload);
-		var data   = Base64.encode(json);
+		var json = JSON.stringify(payload);
+		var data = Base64.encode(json);
 			
 		$.ajax({
 			url: 'php/backend.php',
