@@ -11,7 +11,7 @@
 // TODO:
 //		- make player name editable
 
-var version = '1.1.5';
+var version = '1.1.6';
 
 
 /**
@@ -854,14 +854,21 @@ var App = function() {
 				}
 			}
 
-			if (Math.floor(score / divisor) > level -1 && level < 5) {
+			// console.log("Level: " + level + "\n Score / Divisor: " + Math.floor(score / divisor));
+			if (Math.floor(score / divisor) > 0) {
+				// console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
+
 				// Increase score required to fill up health (e.g. level 1 = 1.000, level 2 = 10.000, level 3 = 100.000, ...).
-				divisor = divisor * Math.pow(10, level);
+				if (score >= divisor) {
+					divisor = Math.pow(10, level) * divisor;
+					level += 1;
+				}
 
-				level += 1;
+				//console.log("(b) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
 
+				
 				if (!sissy) {
-					playerHealth = 100;
+					playerHealth += 100;
 				}
 
 				// Make enemies spawn faster.
