@@ -2,6 +2,9 @@
 
 **Version 1.1.6**
 - fixed issue where tier 2 could not be completed
+- added type safety
+- removed static references in PDO wrapper class
+- removed else-clauses
 
 **Version 1.1.5**
 - various improvements regarding scores and difficulty

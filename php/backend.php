@@ -75,15 +75,13 @@ function getHighestScore($db) {
 			ORDER BY score DESC
 			LIMIT 1;";
 	if ($db->query($sql)) {
-		$result = $db->getOne();
-	} else {
-		$msg = $db->ErrorMsg() . "\n" . $sql;
-		log_msg($msg);
+		return $db->getOne();
 	}
 	
-	//error_log(print_r($result,true));
-	
-	return $result;
+	$msg = $db->ErrorMsg() . "\n" . $sql;
+	log_msg($msg);
+
+	return false;
 }
 
 
@@ -98,8 +96,6 @@ function loadScore($db) {
 			FROM highscores
 			ORDER BY score DESC, player ASC
 			LIMIT 10;";
-	
-	$results = false;
 	
 	if ($db->query($sql)) {
 		$results = $db->getAll();
@@ -121,12 +117,14 @@ function loadScore($db) {
 		
 		$results = json_encode($tmp, JSON_UNESCAPED_UNICODE);
 		unset($tmp);
-	} else {
-		$msg = $db->ErrorMsg() . "\n" . $sql;
-		log_msg($msg);
+		
+		return $results;
 	}
 	
-	return $results;
+	$msg = $db->ErrorMsg() . "\n" . $sql;
+	log_msg($msg);
+	
+	return false;
 }
 
 
@@ -171,21 +169,20 @@ function saveScore($db, $player, $score) {
 	$player = preg_replace('/[^a-zA-Z0-9\s]/', '', $player);
 	$player = truncate($player, 20);
 	$score  = preg_replace('/\D/', '', $score);
-	$result = 'FAILED';
 	
 	if (isHighscore($db, $score)) {
 		$sql = "INSERT INTO highscores (player, score) VALUES (?, ?);";
 		$values = array($player, $score);
 		
-		if (!$db->Execute($sql, $values)) {
-			$msg = $db->ErrorMsg() . "\n" . $sql . "\nValue: " . print_r($values, true);
-			log_msg($msg);
-		} else {
-			$result = 'OK';
+		if ($db->Execute($sql, $values)) {
+			return 'OK';
 		}
+		
+		$msg = $db->ErrorMsg() . "\n" . $sql . "\nValue: " . print_r($values, true);
+		log_msg($msg);
 	}
 	
-	return $result;
+	return 'FAILED';
 }
 
 
