@@ -1,5 +1,11 @@
 ## Changes
 
+**Version 1.1.6**
+- fixed issue where tier 2 could not be completed
+
+**Version 1.1.5**
+- various improvements regarding scores and difficulty
+
 **Version 1.1.4**
 - updated to WADE 4.0
 - resume AudioContext object on click if is has been paused by the browser when the game is loaded. For details see [here](https://goo.gl/7K7WLu).

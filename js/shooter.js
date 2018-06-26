@@ -9,7 +9,7 @@
 
 
 // TODO:
-//		- make player name editable
+//		- add power-ups
 
 var version = '1.1.6';
 
