@@ -47,7 +47,7 @@ var App = function() {
 	
 	var scoreCounter;								// An object to display the score.
 	var score          = 0;							// Current score.
-	var divisor        = 1000;                      // Increase level and health every 1000 points. Gets increased by 10^level later.
+	var divisor        = 1000;						// Increase level and health every 1000 points. Gets increased by 10^level later.
 	
 	var dataNames      = {
 		data: 'overkill'
@@ -335,7 +335,7 @@ var App = function() {
 			musicPlaying = (gameData && gameData.music) || musicPlaying;
 			
 			// Do not show music icon as "enabled" if the browser suspended the AudioContext object.
-			if (wade.getWebAudioContext().state == 'suspended') {
+			if (wade.getWebAudioContext().state === 'suspended') {
 				musicPlaying = false;
 			}
 			
@@ -534,7 +534,7 @@ var App = function() {
 				type: 'POST',
 				data: 'data=' + data,
 				success(result) {
-					if (result == null || result == '' || result == 'FAILED') {
+					if (result === null || result === '' || result === 'FAILED') {
 						//result = 0;
 						result = oldHighScore;
 					}
@@ -626,27 +626,27 @@ var App = function() {
 						$('#playerName').focus();
 						
 						$('#playerName').on('keypress', function(e) {
-				            // Check for Enter key
-				            if (e.keyCode == 13) {
+							// Check for Enter key
+							if (e.keyCode === 13) {
 								e.preventDefault();
 								
-				            	var playerName = $('#playerName').val();
-				            	
-				            	if (playerName.length > 0) {
-				            		$(this).prop('disabled', true);
-
-				            		// Save player's name and score
-				            		wade.app.saveHighscore(currentScore, playerName);
-				            		
-				            		// Reset player's score after saving it.
-				            		score = 0;
-				            		
-				            		$('#playerName').remove();
-				            		$('#playerNameCell').text(playerName);
-				            	}
-				            	
-				                return false;
-				            }
+								var playerName = $('#playerName').val();
+								
+								if (playerName.length > 0) {
+									$(this).prop('disabled', true);
+		
+									// Save player's name and score
+									wade.app.saveHighscore(currentScore, playerName);
+									
+									// Reset player's score after saving it.
+									score = 0;
+									
+									$('#playerName').remove();
+									$('#playerNameCell').text(playerName);
+								}
+								
+							    return false;
+							}
 				        });
 					}
 				} else {
@@ -684,7 +684,7 @@ var App = function() {
 			type: 'POST',
 			data: 'data=' + data,
 			success(result) {
-				if (result == 'OK') {
+				if (result === 'OK') {
 					msg = 'Highscore saved!';
 				} else {
 					// Save score in LocalDB if database connection failed.
@@ -1426,7 +1426,7 @@ var App = function() {
 		var context = wade.getWebAudioContext();
 		
 		// State = "running" or "suspended"
-		if (context.state == 'suspended') {
+		if (context.state === 'suspended') {
 			context.resume().then(() => {
 				console.log('Audio context resumed.');
 			});
