@@ -7,214 +7,11 @@
  *
  */
 
-var version = '1.1.1';
-$('#version').text(version);
 
+// TODO:
+//		- add power-ups
 
-/**
- * Functions to encode/decode Base64.
- */
-var Base64 = {
-	_keyStr: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
-
-	encode(input) {
-		'use strict';
-		var output = '';
-		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-		var i = 0;
-
-		input = Base64._utf8Encode(input);
-
-		while (i < input.length) {
-			chr1 = input.charCodeAt(i++);
-			chr2 = input.charCodeAt(i++);
-			chr3 = input.charCodeAt(i++);
-
-			enc1 = chr1 >> 2;
-			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-			enc4 = chr3 & 63;
-
-			if (isNaN(chr2)) {
-				enc3 = enc4 = 64;
-			} else if (isNaN(chr3)) {
-				enc4 = 64;
-			}
-
-			output = output + this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) + this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
-		}
-
-		return output;
-	},
-
-	decode(input) {
-		'use strict';
-		var output = '';
-		var chr1, chr2, chr3;
-		var enc1, enc2, enc3, enc4;
-		var i = 0;
-
-		input = input.replace('/[^A-Za-z0-9+/=]/g', '');
-
-		while (i < input.length) {
-			enc1 = this._keyStr.indexOf(input.charAt(i++));
-			enc2 = this._keyStr.indexOf(input.charAt(i++));
-			enc3 = this._keyStr.indexOf(input.charAt(i++));
-			enc4 = this._keyStr.indexOf(input.charAt(i++));
-
-			chr1 = (enc1 << 2) | (enc2 >> 4);
-			chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-			chr3 = ((enc3 & 3) << 6) | enc4;
-
-			output = output + String.fromCharCode(chr1);
-
-			if (enc3 !== 64) {
-				output = output + String.fromCharCode(chr2);
-			}
-
-			if (enc4 !== 64) {
-				output = output + String.fromCharCode(chr3);
-			}
-		}
-
-		output = Base64._utf8Decode(output);
-		return output;
-	},
-
-	_utf8Encode(string) {
-		'use strict';
-		string = string.replace('/\r\n/g', '\n');
-		var utftext = '';
-
-		for (var n = 0; n < string.length; n++) {
-			var c = string.charCodeAt(n);
-
-			if (c < 128) {
-				utftext += String.fromCharCode(c);
-			} else if ((c > 127) && (c < 2048)) {
-				utftext += String.fromCharCode((c >> 6) | 192);
-				utftext += String.fromCharCode((c & 63) | 128);
-			} else {
-				utftext += String.fromCharCode((c >> 12) | 224);
-				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-				utftext += String.fromCharCode((c & 63) | 128);
-			}
-		}
-
-		return utftext;
-	},
-
-	_utf8Decode(utftext) {
-		'use strict';
-		var string = '';
-		var i = 0,
-			c1 = 0,
-			c2 = 0,
-			c3 = 0;
-
-		while (i < utftext.length) {
-			c1 = utftext.charCodeAt(i);
-
-			if (c1 < 128) {
-				string += String.fromCharCode(c1);
-				i++;
-			} else if ((c1 > 191) && (c1 < 224)) {
-				c3 = utftext.charCodeAt(i + 1);
-				string += String.fromCharCode(((c1 & 31) << 6) | (c3 & 63));
-				i += 2;
-			} else {
-				c3 = utftext.charCodeAt(i + 1);
-				c2 = utftext.charCodeAt(i + 2);
-				string += String.fromCharCode(((c1 & 15) << 12) | ((c3 & 63) << 6) | (c2 & 63));
-				i += 3;
-			}
-		}
-
-		return string;
-	}
-};
-
-
-/**
- * Return random integer between min and max values.
- *
- * @return random integer
- */
-function getRandomInt(min, max) {
-	'use strict';
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-/**
- * Surround strings or objects which contain strings with padding.
- * 
- * @param obj
- * @returns entity of input type
- */
-function padStrings(obj) {
-	'use strict';
-	var padding = '       ';
-	var tmp;
-	
-	if (typeof(obj) === 'object') {
-		tmp = {};
-		for (var i in obj) {
-			if ({}.hasOwnProperty.call(obj, i)) {
-				tmp[i] = padding + obj[i] + padding;
-			}
-		}
-	} else {
-		tmp = padding + obj + padding;
-	}
-	return tmp;
-}
-
-
-/**
- * Handle mouse move and animation of ship.
- * 
- * @param eventData
- */
-function handleMouseMove(ship, images, eventData) {
-	'use strict';
-	// Get position and sprite of ship.
-	var shipPosition = ship.getPosition();
-	var sprite = ship.getSprite();
-	var animation = null;
-	
-	// Decide direction of animation
-	if (shipPosition.x < 0) {
-		if (shipPosition.x > eventData.screenPosition.x) {
-			//console.log('left');
-			animation = new Animation(images.flyLeft, 5, 1, 30);
-		} else if (shipPosition.x < eventData.screenPosition.x) {
-			//console.log('right');
-			animation = new Animation(images.flyRight, 5, 1, 30);
-		}
-	} else if (shipPosition.x > 0) {
-		if (shipPosition.x < eventData.screenPosition.x) {
-			//console.log('right');
-			animation = new Animation(images.flyRight, 5, 1, 30);
-		} else if (shipPosition.x > eventData.screenPosition.x) {
-			//console.log('left');
-			animation = new Animation(images.flyLeft, 5, 1, 30);
-		}
-	}			
-
-	// Animate ship
-	if (animation !== null) {
-		sprite.addAnimation('fly', animation);
-		ship.playAnimation('fly');
-	
-		ship.onAnimationEnd = function() {
-			sprite.setImageFile(images.ship);
-		};
-	}
-	
-	// Finally move ship to new position.
-	return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
-}
+var version = '1.1.6';
 
 
 /**
@@ -250,6 +47,7 @@ var App = function() {
 	
 	var scoreCounter;								// An object to display the score.
 	var score          = 0;							// Current score.
+	var divisor        = 1000;                      // Increase level and health every 1000 points. Gets increased by 10^level later.
 	
 	var dataNames      = {
 		data: 'overkill'
@@ -272,6 +70,7 @@ var App = function() {
 	// Get highscores.
 	var oldHighScore   = (gameData && gameData.highscore) || 0;
 	
+	// Images, animations, music and sounds
 	var images = {
 		logo		: '../img/logo.png',
 		ship        : '../img/ship.png',
@@ -364,7 +163,8 @@ var App = function() {
 		shoot       : '../sounds/shoot.mp3',
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
-		loop        : '../sounds/loop.mp3'
+		loop        : '../sounds/loop.mp3',
+		menu        : '../sounds/menu.mp3'
 	};
 	
 	var toggleRendererTitle    = document.getElementById('toggleRendererTitle');
@@ -374,10 +174,70 @@ var App = function() {
 	var gameObj                = document.getElementById('game');
 	var gameBtnObj             = document.getElementById('game-icons');
 	
+	$('#version').text(version + ', WADE ' + wade.getVersion());
+	
+	
+	/**
+	 * Check for focus loss (e.g. ich the user tabs/clicks away).
+	 */
+	$(window).blur(function() {
+		if (gameStarted && !gamePaused) {
+			console.log('Game paused due to focus loss.');
+		}
+		wade.app.pauseGame();
+	});
+
+
+	/**
+	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
+	 */
+	$(window).focus(function() {
+		if (!gameStarted) {
+			console.log('Game resumed due to focus gain.');
+			
+			// Spawn asteroids.
+			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+
+			// Resume music.
+			if (musicPlaying) {
+				wade.app.musicOn();
+			}
+			
+			// Resume simulation.
+			wade.resumeSimulation();
+		}
+	});
+
+	
 	// Prevent the game to be run in an iframe.
 	wade.preventIframe();
 	wade.setLoadingBar(true, {x: 0 , y: 0 }, '#333333', '#222222');
 	wade.setLoadingImages('../img/loading.svg');
+
+	
+	/**
+	 * Surround strings or objects which contain strings with padding.
+	 * 
+	 * @param obj
+	 * @returns entity of input type
+	 */
+	this.padStrings = function(obj) {
+		var padding = '       ';
+		var tmp;
+		
+		if (typeof(obj) === 'object') {
+			tmp = {};
+			for (var i in obj) {
+				if ({}.hasOwnProperty.call(obj, i)) {
+					tmp[i] = padding + obj[i] + padding;
+				}
+			}
+		} else {
+			tmp = padding + obj + padding;
+		}
+		return tmp;
+	};
+
 	
 	/**
 	 * Load images and sounds. Also set screen size.
@@ -386,22 +246,32 @@ var App = function() {
 		// Counter
 		var i = 0;
 
-		// Images
-		wade.loadImage(images.logo);
-		wade.loadImage(images.ship);
-		
-		// Bullets
-		wade.loadImage(images.shipBullet);
-		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
-			wade.loadImage(images.enemyBullets[i].file);
+		// Asteroids
+		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
+			wade.loadImage(images.asteroids[i]);
 		}
+
+		// Logo
+		wade.loadImage(images.logo);
 		
 		// Animation
 		for (i = 0; i < Object.keys(images.boom).length; i++) {
 			wade.loadImage(images.boom[i].file);
 		}
-		
-		// Fly left/right lean animation
+
+		// Bullets
+		wade.loadImage(images.shipBullet);
+		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
+			wade.loadImage(images.enemyBullets[i].file);
+		}
+
+		// Enemies
+		for (i = 0; i < Object.keys(images.enemies).length; i++) {
+			wade.loadImage(images.enemies[i]);
+		}
+
+		// Ship and fly left/right lean animation
+		wade.loadImage(images.ship);
 		wade.loadImage(images.flyLeft);
 		wade.loadImage(images.flyRight);
 
@@ -410,22 +280,21 @@ var App = function() {
 		wade.loadImage(images.levelIcon);
 		wade.loadImage(images.scoreIcon);
 		
-		// Enemies
-		for (i = 0; i < Object.keys(images.enemies).length; i++) {
-			wade.loadImage(images.enemies[i]);
-		}
-		
-		// Asteroids
-		for (i = 0; i < Object.keys(images.asteroids).length; i++) {
-			wade.loadImage(images.asteroids[i]);
-		}
-
 		// Sounds. Workaround for old browsers which do not support WebAudio.
 		var loadAudioFunction = wade.isWebAudioSupported()? 'loadAudio' : 'preloadAudio';
 		wade[loadAudioFunction](sounds.shoot);
 		wade[loadAudioFunction](sounds.hit);
 		wade[loadAudioFunction](sounds.explode);
 		wade[loadAudioFunction](sounds.loop);
+		wade[loadAudioFunction](sounds.menu);
+		
+		var checkLoadingStatus = null;
+		checkLoadingStatus = setInterval(function() {
+			console.log('Loaded ' + Math.round(wade.getLoadingPercentage()) + '% of data.');
+			if (wade.getLoadingPercentage() >= 100) {
+				clearInterval(checkLoadingStatus);
+			}
+		}, 1000);
 	};
 
 	
@@ -439,22 +308,37 @@ var App = function() {
 		// Set layer render mode to either WebGL or 2D canvas.
 		force2d = (gameData && gameData.force2d) || force2d;
 
-		if (force2d) {
-			wade.setLayerRenderMode(defaultLayerId, '2d');
-			toggleRendererBtn.removeClass('fa-toggle-on');
-			toggleRendererBtn.addClass('fa-toggle-off');
-			toggleRendererTitle.title = 'Enable WebGL';
-		} else {
+		// Always set render-mode to 2D canvas first ...
+		wade.setLayerRenderMode(defaultLayerId, '2d');
+
+		// Disable quadtree optimization, because we have quite a lot of particles.
+		// Gets re-enabled after initializing everything else.
+		wade.useQuadtree(defaultLayerId, false);
+
+		toggleRendererBtn.removeClass('fa-toggle-on');
+		toggleRendererBtn.addClass('fa-toggle-off');
+		toggleRendererTitle.title = 'Enable WebGL';
+		
+		// ... before we set it to WebGL. This eliminates ugly fonts.
+		if (!force2d) {
 			wade.setLayerRenderMode(defaultLayerId, 'webgl');
+			
+			// Update WebGL toggle icon to reflect current status.
 			toggleRendererBtn.removeClass('fa-toggle-off');
 			toggleRendererBtn.addClass('fa-toggle-on');
 			toggleRendererTitle.title = 'Disable WebGL';
 		}
 
-		
+
 		// Check whether to play background music.
 		if (wade.isWebAudioSupported()) {
 			musicPlaying = (gameData && gameData.music) || musicPlaying;
+			
+			// Do not show music icon as "enabled" if the browser suspended the AudioContext object.
+			if (wade.getWebAudioContext().state == 'suspended') {
+				musicPlaying = false;
+			}
+			
 			if (musicPlaying) {
 				toggleMusicBtn.removeClass('music-off');
 				toggleMusicBtn.addClass('music-on');
@@ -464,6 +348,7 @@ var App = function() {
 			// Just in case ... ;)
 			musicPlaying = false;
 		}
+		
 		
 		// Set screen size to current size of viewport.
 		wade.setMinScreenSize($(window).width(), $(window).height());
@@ -478,10 +363,12 @@ var App = function() {
 			//wade.setMaxScreenSize(wade.getMaxScreenWidth(), wade.getMaxScreenHeight());
 		}
 
+		
 		// Get default renderer.
 		var defaultRenderer = wade.getLayerRenderMode(defaultLayerId);
 		
 		// Log statistics into file.
+		/*
 		if (debug) {
 			log(
 				'\n\t\tbrowser screen size   : '
@@ -502,7 +389,7 @@ var App = function() {
 				+ '\n\t\tfire damage           : ' + fireDamage
 			);
 		}		
-		
+		*/
 		// Main screen text.
 		var menuTexts = {
 			insertCoin  : '- INSERT COIN -',
@@ -513,7 +400,7 @@ var App = function() {
 		
 		// Ugly workaround for cut-off texts when using WebGL.
 		if (defaultRenderer === 'webgl') {
-			menuTexts = padStrings(menuTexts);
+			menuTexts = wade.app.padStrings(menuTexts);
 		}
 		
 		
@@ -524,21 +411,26 @@ var App = function() {
 		
 		clickToStart.addSprite(clickText, { y: 320 });
 
-		if (score <= 0 || oldHighScore >= score) {
-			menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', oldHighScore);
-			clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
-		}
+		
+		// Get current highscore.
+		wade.app.getHighestScore(score, clickToStart, menuTexts);
 
 		if (score > 0) {
 			var scoreVerb = Base64.decode('U0NPUkVE'); //'SCORED';
+
+			// Store highscore only if player didn't cheat. 
 			if (sissy) {
 				scoreVerb = Base64.decode('Q0hFQVRFRA=='); //'CHEATED';
+			} else {
+				//wade.app.saveHighscore(score);
+				$('#highscoreWrapper').fadeToggle();
+				wade.app.loadHighscore(score);
 			}
 			
 			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
 			scoreMsg = scoreMsg.replace('%i', score);
 			if (defaultRenderer === 'webgl') {
-				scoreMsg = padStrings(scoreMsg);
+				scoreMsg = wade.app.padStrings(scoreMsg);
 			}
 
 			clickToStart.addSprite(new TextSprite(scoreMsg, '24pt Highspeed', 'white', 'center'), { y: 120 });
@@ -546,6 +438,8 @@ var App = function() {
 			if (score > oldHighScore) {
 				var highscoreMessage = Base64.decode('TkVXIEhJR0hTQ09SRQ=='); //'NEW HIGHSCORE';
 				oldHighScore = score;
+				score = 0;
+				
 				if (sissy) {
 					highscoreMessage += Base64.decode('IE5PVCBTQVZFRA=='); //' NOT SAVED';
 				}
@@ -554,26 +448,16 @@ var App = function() {
 				
 				// Again that ugly thing.
 				if (defaultRenderer === 'webgl') {
-					highscoreMessage = padStrings(highscoreMessage);
+					highscoreMessage = wade.app.padStrings(highscoreMessage);
 				}
+				
 				var newHighscoreText = new TextSprite(highscoreMessage, '24pt Highspeed', 'yellow', 'center');
 				//newHighscoreText.setDrawFunction(wade.drawFunctions.blink_(0.5, 0.5, newHighscoreText.draw));
 				clickToStart.addSprite(newHighscoreText, { y: 160 });
 			}
 		}
 		
-		// Store highscore only if player didn't cheat. 
-		if(!sissy) {
-			// Update local store with highscore.
-			gameData = {
-				force2d: force2d,
-				music: musicPlaying,
-				highscore: oldHighScore
-			};
-			wade.storeLocalObject(dataNames.data, gameData);
-		}
-		
-		
+
 		// Add logo
 		clickToStart.addSprite(new Sprite(images.logo), { y: -200 });
 		
@@ -594,24 +478,21 @@ var App = function() {
 		// Show main menu.
 		wade.addSceneObject(clickToStart);
 		
-		
-		// Initialize asteroids on the main screen.
-		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+
+		// Initialize asteroids on the main screen. Prevents the use of images which are not loaded, yet.
+		var initAsteroidsInterval = null; 
+		initAsteroidsInterval = setTimeout(function() {
+			if (wade.getLoadingPercentage() >= 100) {
+				console.log('Initializing asteroids on main screen.');
+				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+				clearInterval(initAsteroidsInterval);
+			}
+		}, 1000);
 		
 		
 		// Decide whether to play music or not.
-		if (wade.isWebAudioSupported()) {
-			if (musicPlaying && loopUid === null) {
-				loopUid = wade.playAudio(sounds.loop, true);
-				
-				// On error
-				if (loopUid < 0) {
-					toggleMusicBtn.removeClass('music-on');
-					toggleMusicBtn.addClass('music-off');
-					toggleMusicTitle.title = 'Enable music';
-					musicPlaying = false;
-				}
-			}
+		if (musicPlaying) {
+			wade.app.musicOn();
 		}
 
 		
@@ -620,7 +501,7 @@ var App = function() {
 		 */
 		wade.app.onMouseDown = function() {
 			if (wade.isMouseDown(0) || (wade.isMouseDown() && (isMobileDevice || MSIE))) {
-				// Hide close button and cursor while playing.
+				// Hide toggle buttons and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				gameObj.style.cursor = 'none';
 
@@ -628,10 +509,246 @@ var App = function() {
 				wade.removeSceneObject(clickToStart);
 				wade.clearScene();
 				wade.removeUnusedLayers([ 1 ]);	// Remove all unused layers, but layer 1.
-				wade.app.startGame();
+				wade.clearCanvas(defaultLayerId);
 				wade.app.onMouseDown = 0;
+				wade.app.startGame();
 			}
 		};
+	};
+
+	
+	/**
+	 * Get highest score. Wrapper around an AJAX request to eliminate the "disadvantages" of async requests.
+	 */
+	this.getHighestScore = function(score, clickToStart, menuTexts) {
+		var ajaxInterval = setInterval(function() {
+			var payload = {
+				'action' : 'getHighestScore'
+			};
+
+			var json = JSON.stringify(payload);
+			var data = Base64.encode(json);
+
+			$.ajax({
+				url: 'php/backend.php',
+				type: 'POST',
+				data: 'data=' + data,
+				success(result) {
+					if (result == null || result == '' || result == 'FAILED') {
+						//result = 0;
+						result = oldHighScore;
+					}
+					
+					//console.log('Score:' + score + ', Result: ' + result + ', Old: ' + oldHighScore);
+
+					if (score <= 0 || result > score) {
+						// Show current highscore
+						menuTexts.highscoreIs = menuTexts.highscoreIs.replace('%i', result);
+						clickToStart.addSprite(new TextSprite(menuTexts.highscoreIs, '24pt Highspeed', 'yellow', 'center'), { y: 160 });
+					}
+
+					oldHighScore = result;
+					clearTimeout(ajaxInterval);
+				},
+				error(xhr, status, code) {
+					console.warn('getHighestScore(): AJAX call returned: ' + status + ': ' + code);
+				}
+			});
+		}, 1000);
+	};
+	
+	
+	/**
+	 * Load highscore
+	 */
+	this.loadHighscore = function(currentScore) {
+		var payload = {
+			'action' : 'loadScore'
+		};
+
+		var json          = JSON.stringify(payload);
+		var data          = Base64.encode(json);
+		var msg           = 'Highscore not loaded!';
+		
+		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
+
+		$.ajax({
+			url: 'php/backend.php',
+			type: 'POST',
+			data: 'data=' + data,
+			success(result) {
+				if (result != 'FAILED') {
+					//console.log('Score: ' + currentScore);
+					
+					// Will contain our resulting HTML.
+					var highscoreHtml = '';
+					
+					// Prepare input field in order to reuse it.
+					var highscoreInputField = '<tr><td id="playerNameCell"><input type="text" class="highscore" id="playerName" maxlength="20" value="" placeholder="Enter your name"/></td><td>' + currentScore + '</td></tr>';
+					
+					// Parse JSON formatted result and return an object.
+					var highscoreObj = JSON.parse(result);
+					
+					// Get number of entries of object.
+					var highscoreObjCount = Object.keys(highscoreObj).length;
+					
+					// Flag to check if an input field has been added to the HTML code.
+					var hasInput = false;
+					
+					// Iterate over each entry of the object.
+					$.each(highscoreObj, function(i, item) {
+						// Add input field if player's score is higher than the current entry.
+						if (currentScore > 0 && currentScore >= item.score && !hasInput) {
+							highscoreHtml += highscoreInputField;
+							hasInput = true;
+						}
+						
+						// Limit number of rows to 10.
+						if (i < 9 || !hasInput) {
+							highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
+						}
+						//console.log(item.player + ' = ' + item.score);
+					});
+					
+					// If score is lower than the maximum score in the highscore table
+					// and if there are less than 10 entries in the highscore then allow
+					// the player to enter his name.
+					if (highscoreObjCount < 10 && !hasInput && currentScore > 0) {
+						highscoreHtml += highscoreInputField;
+						hasInput = true;
+					}
+					
+					// Show highscore table.
+					$('#highscoreTable').html(highscoreHtml);
+					
+					// Put cursor into input field if player is allowed to enter his name.
+					if (hasInput) {
+						$('#playerName').focus();
+						
+						$('#playerName').on('keypress', function(e) {
+				            // Check for Enter key
+				            if (e.keyCode == 13) {
+								e.preventDefault();
+								
+				            	var playerName = $('#playerName').val();
+				            	
+				            	if (playerName.length > 0) {
+				            		$(this).prop('disabled', true);
+
+				            		// Save player's name and score
+				            		wade.app.saveHighscore(currentScore, playerName);
+				            		
+				            		// Reset player's score after saving it.
+				            		score = 0;
+				            		
+				            		$('#playerName').remove();
+				            		$('#playerNameCell').text(playerName);
+				            	}
+				            	
+				                return false;
+				            }
+				        });
+					}
+				} else {
+					console.warn('AJAX call by loadHighscore() returned: ' + result);
+				}
+			},
+			error(xhr, status, code) {
+				console.warn('AJAX call by loadHighscore() returned: ' + status + ': ' + code);
+				$('.msg').html(msg);
+			}
+		});
+	};
+
+	
+	/**
+	 * Save highscore
+	 */
+	this.saveHighscore = function(currentScore, currentPlayer) {
+		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
+		currentPlayer = (typeof(currentPlayer) !== 'undefined') ? currentPlayer : 'Player';
+
+		var msg = 'Highscore not saved!';
+		
+		var payload = {
+			'action' : 'saveScore',
+			'player' : currentPlayer,
+			'score' : currentScore
+		};
+		
+		var json = JSON.stringify(payload);
+		var data = Base64.encode(json);
+			
+		$.ajax({
+			url: 'php/backend.php',
+			type: 'POST',
+			data: 'data=' + data,
+			success(result) {
+				if (result == 'OK') {
+					msg = 'Highscore saved!';
+				} else {
+					// Save score in LocalDB if database connection failed.
+					gameData = {
+						force2d: force2d,
+						music: musicPlaying,
+						highscore: currentScore
+					};
+						
+					wade.storeLocalObject(dataNames.data, gameData);
+				}
+				
+				$('.msg').html(msg);
+			},
+			error(xhr, status, code) {
+				console.warn('saveHighscore() returned: ' + status + ': ' + code);
+				$('.msg').html(msg);
+			}
+		});
+	};
+	
+	
+	/**
+	 * Handle mouse move and animation of ship.
+	 * 
+	 * @param eventData
+	 */
+	this.handleMouseMove = function(ship, images, eventData) {
+		// Get position and sprite of ship.
+		var shipPosition = ship.getPosition();
+		var sprite = ship.getSprite();
+		var animation = null;
+		
+		// Decide direction of animation
+		if (shipPosition.x < 0) {
+			if (shipPosition.x > eventData.screenPosition.x) {
+				//console.log('left');
+				animation = new Animation(images.flyLeft, 5, 1, 30);
+			} else if (shipPosition.x < eventData.screenPosition.x) {
+				//console.log('right');
+				animation = new Animation(images.flyRight, 5, 1, 30);
+			}
+		} else if (shipPosition.x > 0) {
+			if (shipPosition.x < eventData.screenPosition.x) {
+				//console.log('right');
+				animation = new Animation(images.flyRight, 5, 1, 30);
+			} else if (shipPosition.x > eventData.screenPosition.x) {
+				//console.log('left');
+				animation = new Animation(images.flyLeft, 5, 1, 30);
+			}
+		}			
+
+		// Animate ship
+		if (animation !== null) {
+			sprite.addAnimation('fly', animation);
+			ship.playAnimation('fly');
+		
+			ship.onAnimationEnd = function() {
+				sprite.setImageFile(images.ship);
+			};
+		}
+		
+		// Finally move ship to new position.
+		return ship && ship.setPosition(eventData.screenPosition.x, eventData.screenPosition.y);
 	};
 
 	
@@ -639,6 +756,9 @@ var App = function() {
 	 * Start game function.
 	 */
 	this.startGame = function() {
+		console.log('Re-enabling quadtree optimizations.');
+		wade.useQuadtree(defaultLayerId, true);
+
 		var sprite = new Sprite(images.ship);
 		var mousePosition = wade.getMousePosition();
 		ship = new SceneObject(sprite, 0, mousePosition.x, mousePosition.y);
@@ -651,7 +771,7 @@ var App = function() {
 			// Reset fire rate.
 			fireRateTemp = fireRate;
 
-			// Check mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
+			// Mouse-buttons (e.g. 0 = left, 1 = middle, 2 = right)
 		
 			// Turbo fire!
 			if (wade.isMouseDown(2) && sissy) {
@@ -734,11 +854,21 @@ var App = function() {
 				}
 			}
 
-			// Increase level and health every 1000 points.
-			if (Math.floor(score / 1000) > level -1 && level < 5) {
-				level += 1;
+			// console.log("Level: " + level + "\n Score / Divisor: " + Math.floor(score / divisor));
+			if (Math.floor(score / divisor) > 0) {
+				// console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
+
+				// Increase score required to fill up health (e.g. level 1 = 1.000, level 2 = 10.000, level 3 = 100.000, ...).
+				if (score >= divisor) {
+					divisor = Math.pow(10, level) * divisor;
+					level += 1;
+				}
+
+				//console.log("(b) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
+
+				
 				if (!sissy) {
-					playerHealth = 100;
+					playerHealth += 100;
 				}
 
 				// Make enemies spawn faster.
@@ -765,7 +895,7 @@ var App = function() {
 			// Draw updated health, level and score.
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
-			scoreCounter.getSprite().setText(Math.floor(score));
+			scoreCounter.getSprite().setText(Math.floor(score) + ', Left: ' + (divisor - Math.floor(score)));
 		}, 'fire');
 
 
@@ -848,6 +978,7 @@ var App = function() {
 						highscore: score
 					};
 					
+					//wade.app.saveHighscore(score);
 					wade.storeLocalObject(dataNames.data, gameData);
 				}
 
@@ -857,7 +988,12 @@ var App = function() {
 					if (!explosionAnimation.isPlaying()) {
 						// Reset game state.
 						gameStarted = false;
-						
+
+						// Stop in-game music and play menu music.
+						if (musicPlaying) {
+							wade.app.musicOn();
+						}
+
 						// Clear interval and timeouts.
 						clearInterval(gameOverInterval);
 						clearTimeout(nextEnemy);
@@ -886,6 +1022,11 @@ var App = function() {
 			fireRate = 4;
 			fireDamage = 200;
 			gameStarted = true;
+
+			// Stop menu music and play in-game music.
+			if (musicPlaying) {
+				wade.app.musicOn();
+			}
 		}
 		
 		// Add a score counter
@@ -917,54 +1058,44 @@ var App = function() {
 		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(levelCounter);
 		
-		
 		// Spawn enemies every two seconds and asteroids every second.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 
+	
 	/**
 	 * Wrapper around pause functions.
 	 */
 	this.pauseGame = function() {
-		wade.pauseSimulation();
-		clearTimeout(nextEnemy);
+		// Don't spawn asteroids on main screen if window has no focus.
 		clearTimeout(nextAsteroid);
-		wade.app.onMouseMove = null;
-		wade.addSceneObject(pauseSpriteObj);
-		gameObj.style.cursor = 'default';
+		
+		// Pause music.
+		wade.app.musicOff();
+		
+		if (gameStarted && !gamePaused) {
+			gamePaused = true;
+			
+			// Don't spawn enemies.
+			clearTimeout(nextEnemy);
+			
+			// Don't move ship.
+			wade.app.onMouseMove = null;
+			
+			// Show PAUSED message.
+			wade.addSceneObject(pauseSpriteObj);
+			
+			// Show mouse cursor.
+			gameObj.style.cursor = 'default';
+		}
+
+		// Finally pause simulation. Has to be done after clearing spawn-timeouts.
+		wade.pauseSimulation();
 		
 		return false;
 	};
 	
-	/**
-	 * Check for focus loss (e.g. ich the user tabs/clicks away).
-	 */
-	$(window).blur(function() {
-		if (gameStarted && !gamePaused) {
-			console.log('Game paused due to focus loss.');
-			gamePaused = true;
-			wade.app.pauseGame();
-		} else {
-			// Don't spawn asteroids on main screen if window has no focus.
-			if (!gameStarted) {
-				console.log('Asteroid timeout cleared due to focus loss.');
-				clearTimeout(nextAsteroid);
-			}
-		}
-		
-		return false;
-	});
-	
-	/**
-	 * Spawn asteroid sprites on the main screen if the game is not yet started, but its window has focus.
-	 */
-	$(window).focus(function() {
-		if (!gameStarted) {
-			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
-		}
-	});
-
 	
 	/**
 	 * Check if space key has been pressed. Toggles game to pause/resume.
@@ -972,21 +1103,28 @@ var App = function() {
 	this.onKeyDown = function(eventData) {
 		// Check for space key 
 		if (gameStarted && eventData.keyCode === 32) {
-			gamePaused = !gamePaused;
-
-			if (gamePaused) {
-				//console.log('Game paused by user.');
+			
+			if (!gamePaused) {
+				console.log('Game paused by user.');
 				wade.app.pauseGame();
+				gamePaused = true;
 			} else {
-				//console.log('Game resumed by user.');
+				gamePaused = false;
+				console.log('Game resumed by user.');
 				gameObj.style.cursor = 'none';
 				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
 				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 				wade.removeSceneObject(pauseSpriteObj);
+				
+				// Resume music.
+				if (musicPlaying) {
+					wade.app.musicOn();
+				}
+				
 				wade.resumeSimulation();
 				wade.app.onMouseMove = function(eventData) {
 					if (typeof(ship) !== 'undefined') {
-						handleMouseMove(ship, images, eventData);
+						wade.app.handleMouseMove(ship, images, eventData);
 					}
 				};
 			}
@@ -1001,7 +1139,7 @@ var App = function() {
 	 */
 	this.onMouseMove = function(eventData) {
 		if (typeof(ship) !== 'undefined') {
-			return handleMouseMove(ship, images, eventData);
+			return wade.app.handleMouseMove(ship, images, eventData);
 		}
 	};
 
@@ -1053,14 +1191,31 @@ var App = function() {
 	
 	
 	/**
+	 * Return random integer between min and max values.
+	 *
+	 * @return random integer
+	 */
+	this.getRandomInt = function(min, max) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	};
+	
+	
+	/**
 	 * Spawn asteroid.
 	 */
 	this.spawnAsteroid = function() {
+		//console.log('spawnAsteroid, Game paused = ' + gamePaused);
+
+		// Sledge-hammer method to make sure no hidden asteroids will be spawned while the game is paused.
+		if (gamePaused) {
+			return false;
+		}
+		
 		// Create an empty sprite.
 		var sprite;
 		
 		// Select random image of asteroid as sprite.
-		var asteroidId = getRandomInt(0, 9);
+		var asteroidId = wade.app.getRandomInt(0, 9);
 		sprite = new Sprite(images.asteroids[asteroidId]);
 		
 		// Calculate start and end coordinates.
@@ -1093,6 +1248,13 @@ var App = function() {
 	 * Spawn enemy.
 	 */
 	this.spawnEnemy = function() {
+		//console.log('spawnEnemy, Game paused = ' + gamePaused);
+
+		// Sledge-hammer method to make sure no hidden enemies will be spawned while the game is paused.
+		if (gamePaused) {
+			return false;
+		}
+
 		// Create an empty sprite.
 		var sprite;
 
@@ -1104,7 +1266,7 @@ var App = function() {
 		}
 		
 		// Select random image of enemy as sprite.
-		var enemyId = getRandomInt(0, maxEnemy);
+		var enemyId = wade.app.getRandomInt(0, maxEnemy);
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
@@ -1212,46 +1374,80 @@ var App = function() {
 
 	
 	/**
+	 * Start playing music
+	 */
+	this.musicOn = function() {
+		if (loopUid > -1) {
+			wade.stopAudio(loopUid);
+		} else {
+			// Fallback if no uid is available for whatever reason.
+			wade.stopAudio();
+		}
+		
+		if (gameStarted) {
+			loopUid = wade.playAudio(sounds.loop, true);	
+		} else {
+			loopUid = wade.playAudio(sounds.menu, true);
+		}
+
+		// On error
+		if (loopUid < 0) {
+			toggleMusicBtn.removeClass('music-on');
+			toggleMusicBtn.addClass('music-off');
+			toggleMusicTitle.title = 'Enable music';
+			musicPlaying = false;
+		}
+
+		return false;
+	};
+	
+	
+	/**
+	 * Stop playing music
+	 * 
+	 * Does NOT work in IE, because IE is a shitty browser and does not support stopping audio streams.
+	 */
+	this.musicOff = function() {
+		if (loopUid > -1) {
+			wade.stopAudio(loopUid);
+		} else {
+			// Fallback if no uid is available for whatever reason.
+			wade.stopAudio();
+		}
+		
+		return false;
+	};
+	
+	
+	/**
 	 * Toogle background music
 	 */
 	this.toggleMusic = function() {
+		var context = wade.getWebAudioContext();
+		
+		// State = "running" or "suspended"
+		if (context.state == 'suspended') {
+			context.resume().then(() => {
+				console.log('Audio context resumed.');
+			});
+		}
+
 		if (musicPlaying) {
 			musicPlaying = false;
+			
 			toggleMusicBtn.removeClass('music-on');
 			toggleMusicBtn.addClass('music-off');
 			toggleMusicTitle.title = 'Enable music';
 
-			if (MSIE) {
-				// Workaround for IE to stop the music, because he doesn't support stopping audio streams.
-				gameData = {
-					force2d: force2d,
-					music: musicPlaying,
-					highscore: oldHighScore
-				};
-				wade.storeLocalObject(dataNames.data, gameData);
-				location.reload();
-			} else {
-				if (loopUid > -1) {
-					wade.stopAudio(loopUid);
-				} else {
-					// Fallback if no uid is available for whatever reason.
-					wade.stopAudio();
-				}
-			}
+			wade.app.musicOff();
 		} else {
-			// Fallback if no uid is available for whatever reason.
-			if (loopUid > -1) {
-				wade.stopAudio(loopUid);
-			} else {
-				// Fallback if no uid is available for whatever reason.
-				wade.stopAudio();
-			}
-
-			loopUid = wade.playAudio(sounds.loop, true);
 			musicPlaying = true;
+
 			toggleMusicBtn.removeClass('music-off');
 			toggleMusicBtn.addClass('music-on');
 			toggleMusicTitle.title = 'Disable music';
+
+			wade.app.musicOn();
 		}
 		
 		gameData = {

@@ -23,7 +23,7 @@ function log(param) {
 	if (debug) {
 		if (typeof(param) !== 'undefined') {
 			$.ajax({
-				url: 'log.php',
+				url: 'php/backend.php',
 				type: 'POST',
 				data: 'log=' + param,
 				success() {
@@ -36,7 +36,6 @@ function log(param) {
 		}
 	}
 }
-
 
 
 /**
@@ -98,6 +97,7 @@ function getBrowserVersion(browserEngineRegEx, parseVersion) {
 	return rv;
 }
 
+
 /**
  * Init game.
  */
@@ -133,6 +133,19 @@ $(function() {
 		case 'toggleMusicTitle':
 			wade.app.toggleMusic();
 			break;
+		case 'toggleHighscoreTitle':
+			$('#highscoreWrapper').fadeToggle();
+			wade.app.loadHighscore();
+			break;
+		}
+	});
+	
+	$('#highscoreWrapper').click(function() {
+		// Hide highscore table only if the player didn't score.
+		if ($('#playerName').length === 0) {
+			$('#highscoreWrapper').fadeOut(400, 'swing', function() {
+				$('#highscoreWrapper').css('display', 'none');
+			});
 		}
 	});
 	
