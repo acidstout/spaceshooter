@@ -191,15 +191,15 @@ function saveScore($db, $player, $score) {
  * 
  * @return string|boolean
  */
-function evaluatePost() {
+function evaluatePost($post) {
 	$db = connectToDatabase();
 	if (!$db) {
 		log_msg('Failed to connect to database.', 'FAILED');
 		return false;
 	}
 	
-	if (isset($_POST['data']) && !empty($_POST['data'])) {
-		$json = base64_decode($_POST['data']);
+	if (isset($post['data']) && !empty($post['data'])) {
+		$json = base64_decode($post['data']);
 		$data = json_decode($json);
 		
 		if (isset($data->action)) {
@@ -219,7 +219,7 @@ function evaluatePost() {
 		}
 	}
 	
-	if (isset($_POST['log']) && !empty($_POST['log'])) {
+	if (isset($post['log']) && !empty($post['log'])) {
 		log_msg($_REQUEST);
 	}
 }
@@ -228,6 +228,7 @@ function evaluatePost() {
  * Init
  */
 if (isset($_POST) && count($_POST) > 0) {
-	evaluatePost();
-	die();
+	evaluatePost($_POST);
 }
+
+die();
