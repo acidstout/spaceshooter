@@ -9,132 +9,9 @@
 
 
 // TODO:
-//		- make player name editable
+//		- add power-ups
 
-var version = '1.1.4';
-
-/**
- * Functions to encode/decode Base64.
- */
-var Base64 = {
-	_keyStr: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
-
-	encode(input) {
-		'use strict';
-		var output = '';
-		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-		var i = 0;
-
-		input = Base64._utf8Encode(input);
-
-		while (i < input.length) {
-			chr1 = input.charCodeAt(i++);
-			chr2 = input.charCodeAt(i++);
-			chr3 = input.charCodeAt(i++);
-
-			enc1 = chr1 >> 2;
-			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-			enc4 = chr3 & 63;
-
-			if (isNaN(chr2)) {
-				enc3 = enc4 = 64;
-			} else if (isNaN(chr3)) {
-				enc4 = 64;
-			}
-
-			output = output + this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) + this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
-		}
-
-		return output;
-	},
-
-	decode(input) {
-		'use strict';
-		var output = '';
-		var chr1, chr2, chr3;
-		var enc1, enc2, enc3, enc4;
-		var i = 0;
-
-		input = input.replace('/[^A-Za-z0-9+/=]/g', '');
-
-		while (i < input.length) {
-			enc1 = this._keyStr.indexOf(input.charAt(i++));
-			enc2 = this._keyStr.indexOf(input.charAt(i++));
-			enc3 = this._keyStr.indexOf(input.charAt(i++));
-			enc4 = this._keyStr.indexOf(input.charAt(i++));
-
-			chr1 = (enc1 << 2) | (enc2 >> 4);
-			chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-			chr3 = ((enc3 & 3) << 6) | enc4;
-
-			output = output + String.fromCharCode(chr1);
-
-			if (enc3 !== 64) {
-				output = output + String.fromCharCode(chr2);
-			}
-
-			if (enc4 !== 64) {
-				output = output + String.fromCharCode(chr3);
-			}
-		}
-
-		output = Base64._utf8Decode(output);
-		return output;
-	},
-
-	_utf8Encode(string) {
-		'use strict';
-		string = string.replace('/\r\n/g', '\n');
-		var utftext = '';
-
-		for (var n = 0; n < string.length; n++) {
-			var c = string.charCodeAt(n);
-
-			if (c < 128) {
-				utftext += String.fromCharCode(c);
-			} else if ((c > 127) && (c < 2048)) {
-				utftext += String.fromCharCode((c >> 6) | 192);
-				utftext += String.fromCharCode((c & 63) | 128);
-			} else {
-				utftext += String.fromCharCode((c >> 12) | 224);
-				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-				utftext += String.fromCharCode((c & 63) | 128);
-			}
-		}
-
-		return utftext;
-	},
-
-	_utf8Decode(utftext) {
-		'use strict';
-		var string = '';
-		var i = 0,
-			c1 = 0,
-			c2 = 0,
-			c3 = 0;
-
-		while (i < utftext.length) {
-			c1 = utftext.charCodeAt(i);
-
-			if (c1 < 128) {
-				string += String.fromCharCode(c1);
-				i++;
-			} else if ((c1 > 191) && (c1 < 224)) {
-				c3 = utftext.charCodeAt(i + 1);
-				string += String.fromCharCode(((c1 & 31) << 6) | (c3 & 63));
-				i += 2;
-			} else {
-				c3 = utftext.charCodeAt(i + 1);
-				c2 = utftext.charCodeAt(i + 2);
-				string += String.fromCharCode(((c1 & 15) << 12) | ((c3 & 63) << 6) | (c2 & 63));
-				i += 3;
-			}
-		}
-
-		return string;
-	}
-};
+var version = '1.1.6';
 
 
 /**
@@ -304,12 +181,10 @@ var App = function() {
 	 * Check for focus loss (e.g. ich the user tabs/clicks away).
 	 */
 	$(window).blur(function() {
-		console.log('Game paused due to focus loss.');
-		wade.app.pauseGame();
-		
 		if (gameStarted && !gamePaused) {
-			gamePaused = true;
+			console.log('Game paused due to focus loss.');
 		}
+		wade.app.pauseGame();
 	});
 
 
@@ -547,7 +422,9 @@ var App = function() {
 			if (sissy) {
 				scoreVerb = Base64.decode('Q0hFQVRFRA=='); //'CHEATED';
 			} else {
-				wade.app.saveHighscore(score);
+				//wade.app.saveHighscore(score);
+				$('#highscoreWrapper').fadeToggle();
+				wade.app.loadHighscore(score);
 			}
 			
 			var scoreMsg = menuTexts.youScored.replace('%s', scoreVerb);
@@ -684,7 +561,7 @@ var App = function() {
 	/**
 	 * Load highscore
 	 */
-	this.loadHighscore = function() {
+	this.loadHighscore = function(currentScore) {
 		var payload = {
 			'action' : 'loadScore'
 		};
@@ -692,7 +569,8 @@ var App = function() {
 		var json          = JSON.stringify(payload);
 		var data          = Base64.encode(json);
 		var msg           = 'Highscore not loaded!';
-		var highscoreOnly = (typeof(highscoreOnly) !== 'undefined') ? highscoreOnly : false;
+		
+		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 
 		$.ajax({
 			url: 'php/backend.php',
@@ -700,23 +578,88 @@ var App = function() {
 			data: 'data=' + data,
 			success(result) {
 				if (result != 'FAILED') {
-					var highscoreObj = JSON.parse(result);
+					//console.log('Score: ' + currentScore);
+					
+					// Will contain our resulting HTML.
 					var highscoreHtml = '';
+					
+					// Prepare input field in order to reuse it.
+					var highscoreInputField = '<tr><td id="playerNameCell"><input type="text" class="highscore" id="playerName" maxlength="20" value="" placeholder="Enter your name"/></td><td>' + currentScore + '</td></tr>';
+					
+					// Parse JSON formatted result and return an object.
+					var highscoreObj = JSON.parse(result);
+					
+					// Get number of entries of object.
+					var highscoreObjCount = Object.keys(highscoreObj).length;
+					
+					// Flag to check if an input field has been added to the HTML code.
+					var hasInput = false;
+					
+					// Iterate over each entry of the object.
 					$.each(highscoreObj, function(i, item) {
-						highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
+						// Add input field if player's score is higher than the current entry.
+						if (currentScore > 0 && currentScore >= item.score && !hasInput) {
+							highscoreHtml += highscoreInputField;
+							hasInput = true;
+						}
+						
+						// Limit number of rows to 10.
+						if (i < 9 || !hasInput) {
+							highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
+						}
 						//console.log(item.player + ' = ' + item.score);
 					});
 					
+					// If score is lower than the maximum score in the highscore table
+					// and if there are less than 10 entries in the highscore then allow
+					// the player to enter his name.
+					if (highscoreObjCount < 10 && !hasInput && currentScore > 0) {
+						highscoreHtml += highscoreInputField;
+						hasInput = true;
+					}
+					
+					// Show highscore table.
 					$('#highscoreTable').html(highscoreHtml);
+					
+					// Put cursor into input field if player is allowed to enter his name.
+					if (hasInput) {
+						$('#playerName').focus();
+						
+						$('#playerName').on('keypress', function(e) {
+				            // Check for Enter key
+				            if (e.keyCode == 13) {
+								e.preventDefault();
+								
+				            	var playerName = $('#playerName').val();
+				            	
+				            	if (playerName.length > 0) {
+				            		$(this).prop('disabled', true);
+
+				            		// Save player's name and score
+				            		wade.app.saveHighscore(currentScore, playerName);
+				            		
+				            		// Reset player's score after saving it.
+				            		score = 0;
+				            		
+				            		$('#playerName').remove();
+				            		$('#playerNameCell').text(playerName);
+				            	}
+				            	
+				                return false;
+				            }
+				        });
+					}
+				} else {
+					console.warn('AJAX call by loadHighscore() returned: ' + result);
 				}
 			},
 			error(xhr, status, code) {
-				console.warn('AJAX call returned: ' + status + ': ' + code);
+				console.warn('AJAX call by loadHighscore() returned: ' + status + ': ' + code);
 				$('.msg').html(msg);
 			}
 		});
 	};
-	
+
 	
 	/**
 	 * Save highscore
@@ -911,14 +854,21 @@ var App = function() {
 				}
 			}
 
-			if (Math.floor(score / divisor) > level -1 && level < 5) {
+			// console.log("Level: " + level + "\n Score / Divisor: " + Math.floor(score / divisor));
+			if (Math.floor(score / divisor) > 0) {
+				// console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
+
 				// Increase score required to fill up health (e.g. level 1 = 1.000, level 2 = 10.000, level 3 = 100.000, ...).
-				divisor = divisor * Math.pow(10, level);
+				if (score >= divisor) {
+					divisor = Math.pow(10, level) * divisor;
+					level += 1;
+				}
 
-				level += 1;
+				//console.log("(b) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
 
+				
 				if (!sissy) {
-					playerHealth = 100;
+					playerHealth += 100;
 				}
 
 				// Make enemies spawn faster.
@@ -1123,8 +1073,10 @@ var App = function() {
 		
 		// Pause music.
 		wade.app.musicOff();
-
-		if (gameStarted) {
+		
+		if (gameStarted && !gamePaused) {
+			gamePaused = true;
+			
 			// Don't spawn enemies.
 			clearTimeout(nextEnemy);
 			
@@ -1151,12 +1103,13 @@ var App = function() {
 	this.onKeyDown = function(eventData) {
 		// Check for space key 
 		if (gameStarted && eventData.keyCode === 32) {
-			gamePaused = !gamePaused;
-
-			if (gamePaused) {
+			
+			if (!gamePaused) {
 				console.log('Game paused by user.');
 				wade.app.pauseGame();
+				gamePaused = true;
 			} else {
+				gamePaused = false;
 				console.log('Game resumed by user.');
 				gameObj.style.cursor = 'none';
 				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);

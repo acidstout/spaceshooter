@@ -3,8 +3,8 @@
 @font-face {
 	font-family: 'Highspeed';
 	src: url('../fonts/highspeed.woff') format('woff'), url('../fonts/highspeed.ttf') format('truetype');
-	font-weight:normal;
-	font-style:normal;
+	font-weight: normal;
+	font-style: normal;
 }
 
 
@@ -71,6 +71,17 @@ hr {
 	margin: 0;
 	margin-top: 0.25em;
 	margin-bottom: 0.25em;
+}
+
+input[type="text"].highscore {
+	background-color: transparent;
+	border: 0 none;
+	color: #f2f200;
+	font-family: 'Highspeed';
+	font-size: 24pt;
+	line-height: 32pt;
+	text-transform: uppercase;
+	width: 100%;
 }
 
 .loadingImage_class {
@@ -177,12 +188,18 @@ hr {
 			}
 		
 		#highscore > table > tbody > tr > td {
+			overflow: hidden;
+			text-overflow: ellipsis;
 			text-align: left;
-			width: 50%;
+			white-space: nowrap;
+			max-width: 200px;
+			width: 80%;
 		} 
 		
 			#highscore > table > tbody > tr > td:last-child {
 				text-align: right;
+				overflow: visible;
+				width: 20%;
 			}
 
 
