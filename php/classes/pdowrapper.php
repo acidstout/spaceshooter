@@ -106,10 +106,10 @@ class Wrapper extends PDO implements WrapperFunctions {
 	 */
 	public function ErrorMsg() {
 		if (is_null($this->database_error)) {
-			$this->database_error = PDO::errorInfo();
+			$this->database_error = $this->connection->errorInfo();
 			
-			if (empty($this->database_error)) {
-				$this->database_error = PDOStatement::errorInfo();
+			if (empty($this->database_error) && $this->stmt !== false) {
+				$this->database_error = $this->stmt->errorInfo();
 			}
 		}
 		
@@ -233,7 +233,7 @@ class Wrapper extends PDO implements WrapperFunctions {
 			$sql = "SELECT LASTVAL();";
 		}
 		
-		return $db->getOne($sql);
+		return $this->getOne($sql);
 	}
 	
 	
