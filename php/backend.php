@@ -220,7 +220,7 @@ function evaluatePost($post) {
 	}
 	
 	if (isset($post['log']) && !empty($post['log'])) {
-		log_msg($_REQUEST);
+		log_msg($post);
 	}
 }
 
