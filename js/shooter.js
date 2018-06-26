@@ -577,7 +577,7 @@ var App = function() {
 			type: 'POST',
 			data: 'data=' + data,
 			success(result) {
-				if (result != 'FAILED') {
+				if (result !== 'FAILED') {
 					//console.log('Score: ' + currentScore);
 					
 					// Will contain our resulting HTML.
@@ -645,9 +645,9 @@ var App = function() {
 									$('#playerNameCell').text(playerName);
 								}
 								
-							    return false;
+								return false;
 							}
-				        });
+						});
 					}
 				} else {
 					console.warn('AJAX call by loadHighscore() returned: ' + result);
