@@ -9,9 +9,17 @@
 
 
 // TODO:
-//		- add power-ups
+/*
+	- finish power-ups "shield", "missiles" and "targeting" to actually do something
+		- decrease shield by one with every hit instead of player health
+		- decrease missiles by one if fired
+		- define missile fire-button
+		- define event "enemy hit by missile"
+		- decrease targeting by one every second
+		- add status display for addons
+*/
 
-var version = '1.1.6';
+var version = '1.1.8 Beta';
 
 
 /**
@@ -43,7 +51,66 @@ var App = function() {
 	var asteroidDelay  = 1000;						// How long to wait from spawning one asteroid to spawning the next one.
 	var nextAsteroid;								// The process that will spawn the next asteroid.
 	
+	//var powerupHealth  = [ 5, 10, 20, 40 ];
+	
+	var powerUps = {
+		// Increases score
+		cannister: {
+			images: [
+				'../img/powerups/cannister0.png',
+				'../img/powerups/cannister1.png',
+				'../img/powerups/cannister2.png'
+			],
+			values: [ 100, 1000, 10000 ],
+			name: 'cannister'
+		},
+		// Increases health
+		heart: {
+			images: [
+				'../img/powerups/heart0.png',
+				'../img/powerups/heart1.png',
+				'../img/powerups/heart2.png'
+			],
+			values: [ 5, 10, 20 ],
+			name: 'heart'
+		},
+		// Number of missiles (each missile has a strength of 1000 hit points)
+		missiles: {
+			images: [
+				'../img/powerups/missiles0.png',
+				'../img/powerups/missiles1.png',
+				'../img/powerups/missiles2.png'
+			],
+			values: [ 5, 10, 15 ],
+			name: 'missiles'
+		},
+		// Number of hit points which do not decrease health
+		shield: {
+			images: [
+				'../img/powerups/shield0.png',
+				'../img/powerups/shield1.png',
+				'../img/powerups/shield2.png'
+			],
+			values: [ 4, 7, 10 ],
+			name: 'shield'
+		},
+		// Number of seconds where enemies don't shoot at you
+		targeting: {
+			images: [
+				'../img/powerups/targeting0.png',
+				'../img/powerups/targeting1.png',
+				'../img/powerups/targeting2.png'
+			],
+			values: [ 10, 20, 30 ],
+			name: 'targeting'
+		}
+	};
+	
 	var activeBullets  = [];						// A list of bullets we've fired and are still active.
+	
+	var shields   = 0;								// Number of shields the player has.
+	var missiles  = 0;								// Number of missiles the player has.
+	var targeting = 0;								// Number of remaining seconds before enemies shoot at player.
 	
 	var scoreCounter;								// An object to display the score.
 	var score          = 0;							// Current score.
@@ -270,6 +337,14 @@ var App = function() {
 			wade.loadImage(images.enemies[i]);
 		}
 
+		// Power-Ups
+		Object.keys(powerUps).forEach(key => {
+			//console.log(powerUps[key].images);
+			for (i = 0; i < powerUps[key].images.length; i++) {
+				wade.loadImage(powerUps[key].images[i]);
+			}
+		});
+		
 		// Ship and fly left/right lean animation
 		wade.loadImage(images.ship);
 		wade.loadImage(images.flyLeft);
@@ -836,11 +911,20 @@ var App = function() {
 									wade.app.explosion(position, 2);
 									wade.playAudio(sounds.explode, false);
 									
+									var hasPowerUp = colliders[j].isAsteroid;
+
 									// Delete collider (enemy/asteroid).
 									wade.removeSceneObject(colliders[j]);
-
+									
 									// Increase score if enemy/asteroid shot down by a 10th of its initial health.
 									score += Math.floor(colliders[j].initialHealth / 10) * level;
+									
+									// Spawn power-up.
+									var powerupTrigger = wade.app.getRandomInt(0, 9);
+									var powerupTriggers = [ 4, 9 ];
+									if (hasPowerUp && powerupTriggers.indexOf(powerupTrigger) > -1) {
+										wade.app.spawnPowerUp(position);
+									}
 								}
 
 								// Delete bullet.
@@ -915,30 +999,63 @@ var App = function() {
 
 					if (typeof(overlapping[i]) !== 'undefined') {
 						// ... check if the overlapping object is either an enemy or an enemy's bullet.
-						if (overlapping[i].isEnemy || overlapping[i].isEnemyBullet) {
+						if (overlapping[i].isEnemy || overlapping[i].isEnemyBullet || overlapping[i].isPowerUp) {
 							
 							// Comparing per-pixel is quite slow, but the only easy way to check for collisions while discarding transparent pixels.
-							if (typeof(overlapping[i]) !== 'undefined' && ship.overlapsObject(overlapping[i], 'pixel')) {
+							if (ship.overlapsObject(overlapping[i], 'pixel')) {
+								
+								// Is Power-Up?
+								if (overlapping[i].isPowerUp) {
+									// Check type of power-up and decide what to do. 
+									switch (overlapping[i].name) {
+										case 'cannister':
+											score += overlapping[i].initialValue;
+											break;
+										case 'heart':
+											playerHealth += overlapping[i].initialValue;
+											break;
+										case 'missiles':
+											if (missiles < 20) {
+												missiles += overlapping[i].initialValue;
+											}
+											break;
+										case 'shield':
+											if (shields < 100) {
+												shields += overlapping[i].initialValue;
+											}
+											break;
+										case 'targeting':
+											if (targeting < 10) {
+												targeting += overlapping[i].initialValue;
+											}
+											break;
+									}
+									wade.removeSceneObject(overlapping[i]);
+									wade.removeObjectFromArrayByIndex(i, overlapping);
+									
+									break;
+								}
+								
 								// Decrease health of overlapping object by a 10th of the default fire damage.
 								if (overlapping[i].health > 0) {
 									overlapping[i].health -= Math.floor(fireDamage / 10);
 								}
 								
+								enemyDamage = overlapping[i].damage || enemyDamage;
+
 								// Remove enemy's bullet and/or ship if it hit the player's ship.
-								if (typeof(overlapping[i]) !== 'undefined' && (overlapping[i].isEnemyBullet || overlapping[i].health <= 0)) {
+								if (overlapping[i].isEnemyBullet || overlapping[i].health <= 0) {
 									wade.removeSceneObject(overlapping[i]);
 									wade.removeObjectFromArrayByIndex(i, overlapping);
 								}
 								
-								if (typeof(overlapping[i]) !== 'undefined') {
-									enemyDamage = overlapping[i].damage || enemyDamage;
-								}
-
 								hit = true;
 								break;
 							}
 						}
 					}
+					
+					hit = false;
 				}
 			}
 			
@@ -1201,6 +1318,64 @@ var App = function() {
 	
 	
 	/**
+	 * Spawn power-up
+	 */
+	this.spawnPowerUp = function(coords) {
+		// Create an empty sprite.
+		var sprite;
+		
+		// Select random image of powerup as sprite.
+		var powerUpId = wade.app.getRandomInt(0, 2);
+		var powerUpTypeId = wade.app.getRandomInt(0, 4);
+		var powerUpType;
+		
+		switch (powerUpTypeId) {
+			case 1:
+				powerUpType = powerUps.heart;
+				break;
+			case 2:
+				powerUpType = powerUps.missiles;
+				break;
+			case 3:
+				powerUpType = powerUps.shield;
+				break;
+			case 4:
+				powerUpType = powerUps.targeting;
+				break;
+			default:
+				powerUpType = powerUps.cannister;
+				break;
+		}
+		
+		console.log(powerUpType.values[powerUpId]);
+		
+		sprite = new Sprite(powerUpType.images[powerUpId]);
+		
+		// Calculate start and end coordinates.
+		var coordsDest = wade.app.getRandomCoords(sprite);
+		
+		// Add the object to the scene and make it move.
+		var powerUp = new SceneObject(sprite, 0, coords.x, coords.y);
+		wade.addSceneObject(powerUp);
+		powerUp.moveTo(coordsDest.x2, coordsDest.y2, 200);
+		powerUp.isEnemy = false;
+		powerUp.isAsteroid = false;
+		powerUp.isPowerUp = true;
+		powerUp.initialValue = powerUpType.values[powerUpId];
+		powerUp.name = powerUpType.name;
+		powerUp.damage = 0;
+		
+		
+		/**
+		 * When the powerup has finished moving, delete it.
+		 */
+		powerUp.onMoveComplete = function() {
+			wade.removeSceneObject(this);
+		};
+	};
+	
+	
+	/**
 	 * Spawn asteroid.
 	 */
 	this.spawnAsteroid = function() {
@@ -1227,6 +1402,7 @@ var App = function() {
 		asteroid.moveTo(coords.x2, coords.y2, 200);
 		asteroid.isEnemy = true;
 		asteroid.isAsteroid = true;
+		asteroid.isPowerUp = false;
 		asteroid.health = asteroidHealth[asteroidId];
 		asteroid.initialHealth = asteroidHealth[asteroidId];
 		asteroid.damage = Math.floor(asteroidHealth[asteroidId] / 100);
@@ -1278,6 +1454,7 @@ var App = function() {
 		enemy.moveTo(coords.x2, coords.y2, 200);
 		enemy.isEnemy = true;
 		enemy.isAsteroid = false;
+		enemy.isPowerUp = false;
 		enemy.health = enemyHealth[enemyId];
 		enemy.initialHealth = enemyHealth[enemyId];
 		enemy.damage = Math.floor(enemyHealth[enemyId] / 100);

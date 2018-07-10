@@ -123,7 +123,7 @@ input[type="text"].highscore {
 
 #__wade_loading_bar {
 	max-width: 140px;
-	max-height: 8px;
+	max-height: 14px;
 }
 
 	#__wade_loading_bar > div {
@@ -154,7 +154,7 @@ input[type="text"].highscore {
 		font-smooth: never;
 		-webkit-font-smoothing : none;
 		
-		line-height: 28pt;
+		line-height: 30pt;
 		
 		padding: 8px;
 	
