@@ -10,16 +10,18 @@
 
 // TODO:
 /*
-	- finish power-ups "shield", "missiles" and "targeting" to actually do something
-		- decrease shield by one with every hit instead of player health
-		- decrease missiles by one if fired
+	- finish power-up "missiles"
 		- define missile fire-button
-		- define event "enemy hit by missile"
-		- decrease targeting by one every second
-		- add status display for addons
+
 */
 
-var version = '1.1.8 Beta';
+// FIXME:
+/*
+	- check endless spawning of asteroids again :(
+	
+*/
+
+var version = '1.1.7';
 
 
 /**
@@ -42,6 +44,7 @@ var App = function() {
 	var fireRate       = 4;							// How many bullets per second to fire.
 	var fireRateTemp   = 4;							// Temporary fire rate (e.g. overrides default fire rate if cheat-mode is enabled).
 	var fireDamage     = 200;						// How much damage is caused by one shot of the player's ship.
+	var missileDamage  = 1000;						// Damage caused by missile is much higher than normal fire damage.
 	
 	var enemyHealth    = [ 400, 600, 800, 1500, 5000 ];	// Enemy's health.
 	var enemyDelay     = 2000;						// How long to wait from spawning one enemy to spawning the next one.
@@ -50,8 +53,6 @@ var App = function() {
 	var asteroidHealth = [ 200, 200, 200, 300, 400, 400, 600, 500, 400, 600 ];	// Asteroid's health.
 	var asteroidDelay  = 1000;						// How long to wait from spawning one asteroid to spawning the next one.
 	var nextAsteroid;								// The process that will spawn the next asteroid.
-	
-	//var powerupHealth  = [ 5, 10, 20, 40 ];
 	
 	var powerUps = {
 		// Increases score
@@ -81,7 +82,7 @@ var App = function() {
 				'../img/powerups/missiles1.png',
 				'../img/powerups/missiles2.png'
 			],
-			values: [ 5, 10, 15 ],
+			values: [ 25, 50, 100 ],
 			name: 'missiles'
 		},
 		// Number of hit points which do not decrease health
@@ -106,30 +107,33 @@ var App = function() {
 		}
 	};
 	
-	var activeBullets  = [];						// A list of bullets we've fired and are still active.
+	var activeBullets   = [];						// A list of bullets we've fired and are still active.
 	
-	var shields   = 0;								// Number of shields the player has.
-	var missiles  = 0;								// Number of missiles the player has.
-	var targeting = 0;								// Number of remaining seconds before enemies shoot at player.
+	var playerShields   = 0;						// Number of shields the player has.
+	var playerMissiles  = 0;						// Number of missiles the player has.
+	var playerTargeting = 0;						// Number of remaining seconds before enemies shoot at player.
 	
 	var scoreCounter;								// An object to display the score.
-	var score          = 0;							// Current score.
-	var divisor        = 1000;						// Increase level and health every 1000 points. Gets increased by 10^level later.
+	var score           = 0;						// Current score.
+	var divisor         = 1000;						// Increase level and health every 1000 points. Gets increased by 10^level later.
 	
-	var dataNames      = {
+	var dataNames       = {
 		data: 'overkill'
 	};
 
-	var healthCounter;								// Object to display the health.
-	var playerHealth   = 100;						// Initial health of player's ship.
+	var healthCounter;								// Object to display player's health.
+	var missilesCounter;							// Object to display missiles status.
+	var shieldsCounter;								// Object to display shield status.
+	var targetingCounter;							// Object to display targeting status.
+	var playerHealth    = 100;						// Initial health of player's ship.
 	
 	var levelCounter;								// Object to display the level.
-	var level          = 1;							// Initial level.
-	var loopUid        = null;						// Uid of the background music. Used to start/stop it.
-	var musicPlaying   = false;						// Status of background music
+	var level           = 1;						// Initial level.
+	var loopUid         = null;						// Uid of the background music. Used to start/stop it.
+	var musicPlaying    = false;					// Status of background music
 	
 	// Retrieve game data.
-	var gameData       = wade.retrieveLocalObject(dataNames.data);
+	var gameData = wade.retrieveLocalObject(dataNames.data);
 
 	// Disable cheat-mode by default.
 	const sissy = (gameData && gameData.sissy) || false;
@@ -169,6 +173,7 @@ var App = function() {
 		
 		// Bullets
 		shipBullet   : '../img/bullets/bullet_ship.png',
+		shipMissile  : '../img/bullets/missile_ship.png',
 		enemyBullets : {
 			0 : {
 				file: '../img/bullets/bullet0.png',
@@ -221,13 +226,17 @@ var App = function() {
 		},
 		
 		// Top row icons
-		healthIcon  : '../img/icons/heart.png',
-		levelIcon   : '../img/icons/star.png',
-		scoreIcon   : '../img/icons/trophy.png'
+		healthIcon    : '../img/icons/heart.png',
+		levelIcon     : '../img/icons/star.png',
+		scoreIcon     : '../img/icons/trophy.png',
+		missilesIcon  : '../img/icons/missiles.png',
+		shieldsIcon   : '../img/icons/shields.png',
+		targetingIcon : '../img/icons/targeting.png'
 	};
 	
 	var sounds = {
 		shoot       : '../sounds/shoot.mp3',
+		missile     : '../sounds/missile.mp3',
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
 		loop        : '../sounds/loop.mp3',
@@ -328,6 +337,7 @@ var App = function() {
 
 		// Bullets
 		wade.loadImage(images.shipBullet);
+		wade.loadImage(images.shipMissile);
 		for (i = 0; i < Object.keys(images.enemyBullets).length; i++) {
 			wade.loadImage(images.enemyBullets[i].file);
 		}
@@ -354,10 +364,14 @@ var App = function() {
 		wade.loadImage(images.healthIcon);
 		wade.loadImage(images.levelIcon);
 		wade.loadImage(images.scoreIcon);
+		wade.loadImage(images.missilesIcon);
+		wade.loadImage(images.shieldsIcon);
+		wade.loadImage(images.targetingIcon);
 		
 		// Sounds. Workaround for old browsers which do not support WebAudio.
 		var loadAudioFunction = wade.isWebAudioSupported()? 'loadAudio' : 'preloadAudio';
 		wade[loadAudioFunction](sounds.shoot);
+		wade[loadAudioFunction](sounds.missile);
 		wade[loadAudioFunction](sounds.hit);
 		wade[loadAudioFunction](sounds.explode);
 		wade[loadAudioFunction](sounds.loop);
@@ -839,6 +853,9 @@ var App = function() {
 		ship = new SceneObject(sprite, 0, mousePosition.x, mousePosition.y);
 		wade.addSceneObject(ship);
 		
+		// If player has missiles and player has shot, this will be true.
+		var missileShot = false;
+		
 		/**
 		 * Function to handle player shooting.
 		 */
@@ -855,15 +872,31 @@ var App = function() {
 
 			var nextFireTime = lastFireTime + 1 / fireRateTemp;
 			var time = wade.getAppTime();
-			
+
 			if ((wade.isMouseDown(0) || wade.isMouseDown(2) || (wade.isMouseDown() && (isMobileDevice || MSIE))) && time >= nextFireTime) {
 				lastFireTime = time;
 				var shipPosition = ship.getPosition();
 				var shipSize = ship.getSprite().getSize();
-				var sprite = new Sprite(images.shipBullet);
+				
+				var sprite;			// Used to set sprite of bullet (e.g. missile or normal bullet).
+				var bulletAudio;	// Used to set audio file of bullet.
+				
+				// Decide whether to use missiles of normal bullets.
+				if (playerMissiles > 0) {
+					playerMissiles--;
+					bulletAudio = sounds.missile;
+					sprite = new Sprite(images.shipMissile);
+					missileShot = true;
+				} else {
+					bulletAudio = sounds.shoot;
+					sprite = new Sprite(images.shipBullet);
+					missileShot = false;
+				}
+				
+				// Create sprite of selected bullet image.
 				var bullet = new SceneObject(sprite, 0, shipPosition.x, shipPosition.y - shipSize.y / 2);
 				wade.addSceneObject(bullet);
-				wade.playAudio(sounds.shoot, false);
+				wade.playAudio(bulletAudio, false);
 				activeBullets.push(bullet);
 				bullet.moveTo(shipPosition.x, -500, 600);
 				
@@ -901,8 +934,13 @@ var App = function() {
 								wade.playAudio(sounds.hit, false);
 
 								// Decrease health of collider (e.g. enemy, , ...).
+								//console.log('Colliders health: ' + colliders[j].health + ', Missile? ' + missileShot);
 								if (colliders[j].health > 0) {
-									colliders[j].health -= fireDamage;
+									if (missileShot) {
+										colliders[j].health -= missileDamage;
+									} else {
+										colliders[j].health -= fireDamage;
+									}
 								}
 								
 								// Check enemy's health again.
@@ -976,10 +1014,13 @@ var App = function() {
 				}
 			}
 
-			// Draw updated health, level and score.
+			// Draw updated health, level, score, ...
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
+			missilesCounter.getSprite().setText(playerMissiles);
 			scoreCounter.getSprite().setText(Math.floor(score) + ', Left: ' + (divisor - Math.floor(score)));
+			shieldsCounter.getSprite().setText(playerShields);
+			targetingCounter.getSprite().setText(playerTargeting);
 		}, 'fire');
 
 
@@ -1008,27 +1049,27 @@ var App = function() {
 								if (overlapping[i].isPowerUp) {
 									// Check type of power-up and decide what to do. 
 									switch (overlapping[i].name) {
-										case 'cannister':
-											score += overlapping[i].initialValue;
-											break;
-										case 'heart':
-											playerHealth += overlapping[i].initialValue;
-											break;
-										case 'missiles':
-											if (missiles < 20) {
-												missiles += overlapping[i].initialValue;
-											}
-											break;
-										case 'shield':
-											if (shields < 100) {
-												shields += overlapping[i].initialValue;
-											}
-											break;
-										case 'targeting':
-											if (targeting < 10) {
-												targeting += overlapping[i].initialValue;
-											}
-											break;
+									case 'cannister':
+										score += overlapping[i].initialValue;
+										break;
+									case 'heart':
+										playerHealth += overlapping[i].initialValue;
+										break;
+									case 'missiles':
+										if (playerMissiles < 250) {
+											playerMissiles += overlapping[i].initialValue;
+										}
+										break;
+									case 'shield':
+										if (playerShields < 100) {
+											playerShields += overlapping[i].initialValue;
+										}
+										break;
+									case 'targeting':
+										if (playerTargeting < 10) {
+											playerTargeting += overlapping[i].initialValue;
+										}
+										break;
 									}
 									wade.removeSceneObject(overlapping[i]);
 									wade.removeObjectFromArrayByIndex(i, overlapping);
@@ -1068,13 +1109,31 @@ var App = function() {
 
 				// Decrease health.
 				if (playerHealth > 0) {
-					playerHealth -= enemyDamage;
+					if (playerShields > 0) {
+						playerShields -= enemyDamage;
+					} else {
+						playerHealth -= enemyDamage;
+					}
+				}
+
+				if (playerShields < 0 || playerShields === 'NaN') {
+					playerShields = 0;
 				}
 				
 				if (playerHealth < 0 || playerHealth === 'NaN') {
 					playerHealth = 0;
 				}
+				
+				if (playerMissiles < 0 || playerMissiles === 'NaN') {
+					playerMissiles = 0;
+				}
+
+				
+				// Update player's status (e.g. health, missiles, shields ...)
 				healthCounter.getSprite().setText(playerHealth);
+				missilesCounter.getSprite().setText(playerMissiles);
+				shieldsCounter.getSprite().setText(playerShields);
+				targetingCounter.getSprite().setText(playerTargeting);
 			}
 
 			// Always check player's health. Not only when hit. Fixes an issue where the ship disappeared, but the game continued.
@@ -1146,17 +1205,47 @@ var App = function() {
 			}
 		}
 		
-		// Add a score counter
-		var scoreIconSprite = new Sprite(images.scoreIcon);
-		var scoreIconObj = new SceneObject(scoreIconSprite, 0, wade.getScreenWidth() / 2 - 20, -10 - wade.getScreenHeight() / 2 + 30);
-		wade.addSceneObject(scoreIconObj);
+		// Add level indicator. Left.
+		var levelIconSprite = new Sprite(images.levelIcon);
+		var levelIconObj = new SceneObject(levelIconSprite, 0, 20 - (wade.getScreenWidth() / 2), -12 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(levelIconObj);
 
-		var scoreSprite = new TextSprite(score.toString(), '32pt Highspeed', '#f88', 'right');
-		scoreCounter = new SceneObject(scoreSprite, 0, wade.getScreenWidth() / 2 - 40, 4 - wade.getScreenHeight() / 2 + 30);
-		wade.addSceneObject(scoreCounter);
+		var levelSprite = new TextSprite(level, '32pt Highspeed', '#f88', 'left');
+		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(levelCounter);
 		
 		
-		// Add a health counter.
+		// Add a targeting counter. Left.
+		var targetingIconSprite = new Sprite(images.targetingIcon);
+		var targetingIconObj = new SceneObject(targetingIconSprite, 0, 110 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(targetingIconObj);
+
+		var targetingSprite = new TextSprite(playerTargeting.toString(), '32pt Highspeed', '#f88', 'center');
+		targetingCounter = new SceneObject(targetingSprite, 0, 150 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(targetingCounter);
+		
+		
+		// Add a missile counter. Left.
+		var missilesIconSprite = new Sprite(images.missilesIcon);
+		var missilesIconObj = new SceneObject(missilesIconSprite, 0, 210 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(missilesIconObj);
+
+		var missilesSprite = new TextSprite(playerMissiles.toString(), '32pt Highspeed', '#f88', 'center');
+		missilesCounter = new SceneObject(missilesSprite, 0, 250 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(missilesCounter);
+		
+		
+		// Add a shield counter. Left.
+		var shieldsIconSprite = new Sprite(images.shieldsIcon);
+		var shieldsIconObj = new SceneObject(shieldsIconSprite, 0, 310 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(shieldsIconObj);
+
+		var shieldsSprite = new TextSprite(playerShields.toString(), '32pt Highspeed', '#f88', 'center');
+		shieldsCounter = new SceneObject(shieldsSprite, 0, 350 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(shieldsCounter);
+		
+		
+		// Add a health counter. Center.
 		var healthIconSprite = new Sprite(images.healthIcon);
 		var healthIconObj = new SceneObject(healthIconSprite, 0, -120, -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(healthIconObj);
@@ -1166,14 +1255,15 @@ var App = function() {
 		wade.addSceneObject(healthCounter);
 		
 		
-		// Add level indicator
-		var levelIconSprite = new Sprite(images.levelIcon);
-		var levelIconObj = new SceneObject(levelIconSprite, 0, 20 - (wade.getScreenWidth() / 2), -12 - wade.getScreenHeight() / 2 + 30);
-		wade.addSceneObject(levelIconObj);
+		// Add a score counter. Right.
+		var scoreIconSprite = new Sprite(images.scoreIcon);
+		var scoreIconObj = new SceneObject(scoreIconSprite, 0, wade.getScreenWidth() / 2 - 20, -10 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(scoreIconObj);
 
-		var levelSprite = new TextSprite(level, '32pt Highspeed', '#f88', 'left');
-		levelCounter = new SceneObject(levelSprite, 0, 40 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
-		wade.addSceneObject(levelCounter);
+		var scoreSprite = new TextSprite(score.toString(), '32pt Highspeed', '#f88', 'right');
+		scoreCounter = new SceneObject(scoreSprite, 0, wade.getScreenWidth() / 2 - 40, 4 - wade.getScreenHeight() / 2 + 30);
+		wade.addSceneObject(scoreCounter);
+
 		
 		// Spawn enemies every two seconds and asteroids every second.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
@@ -1185,6 +1275,7 @@ var App = function() {
 	 * Wrapper around pause functions.
 	 */
 	this.pauseGame = function() {
+		//console.log('Game paused.');
 		// Don't spawn asteroids on main screen if window has no focus.
 		clearTimeout(nextAsteroid);
 		
@@ -1210,7 +1301,7 @@ var App = function() {
 		// Finally pause simulation. Has to be done after clearing spawn-timeouts.
 		wade.pauseSimulation();
 		
-		return false;
+		// Do not return anything here. It will cause endless spawning of asteroids.
 	};
 	
 	
@@ -1330,48 +1421,51 @@ var App = function() {
 		var powerUpType;
 		
 		switch (powerUpTypeId) {
-			case 1:
-				powerUpType = powerUps.heart;
-				break;
-			case 2:
-				powerUpType = powerUps.missiles;
-				break;
-			case 3:
-				powerUpType = powerUps.shield;
-				break;
-			case 4:
-				powerUpType = powerUps.targeting;
-				break;
-			default:
-				powerUpType = powerUps.cannister;
-				break;
+		case 1:
+			powerUpType = powerUps.heart;
+			break;
+		case 2:
+			powerUpType = powerUps.missiles;
+			break;
+		case 3:
+			powerUpType = powerUps.shield;
+			break;
+		case 4:
+			powerUpType = powerUps.targeting;
+			break;
+		default:
+			powerUpType = powerUps.cannister;
+			break;
 		}
+
+		//console.log(powerUpType.values[powerUpId]);
 		
-		console.log(powerUpType.values[powerUpId]);
-		
-		sprite = new Sprite(powerUpType.images[powerUpId]);
-		
-		// Calculate start and end coordinates.
-		var coordsDest = wade.app.getRandomCoords(sprite);
-		
-		// Add the object to the scene and make it move.
-		var powerUp = new SceneObject(sprite, 0, coords.x, coords.y);
-		wade.addSceneObject(powerUp);
-		powerUp.moveTo(coordsDest.x2, coordsDest.y2, 200);
-		powerUp.isEnemy = false;
-		powerUp.isAsteroid = false;
-		powerUp.isPowerUp = true;
-		powerUp.initialValue = powerUpType.values[powerUpId];
-		powerUp.name = powerUpType.name;
-		powerUp.damage = 0;
-		
-		
-		/**
-		 * When the powerup has finished moving, delete it.
-		 */
-		powerUp.onMoveComplete = function() {
-			wade.removeSceneObject(this);
-		};
+		// Only spawn "targeting" power-up if player does not have one, yet.
+		if (powerUpType !== powerUps.targeting || playerTargeting <= 0) {
+			sprite = new Sprite(powerUpType.images[powerUpId]);
+			
+			// Calculate start and end coordinates.
+			var coordsDest = wade.app.getRandomCoords(sprite);
+			
+			// Add the object to the scene and make it move.
+			var powerUp = new SceneObject(sprite, 0, coords.x, coords.y);
+			wade.addSceneObject(powerUp);
+			powerUp.moveTo(coordsDest.x2, coordsDest.y2, 200);
+			powerUp.isEnemy = false;
+			powerUp.isAsteroid = false;
+			powerUp.isPowerUp = true;
+			powerUp.initialValue = powerUpType.values[powerUpId];
+			powerUp.name = powerUpType.name;
+			powerUp.damage = 0;
+			
+			
+			/**
+			 * When the powerup has finished moving, delete it.
+			 */
+			powerUp.onMoveComplete = function() {
+				wade.removeSceneObject(this);
+			};
+		}
 	};
 	
 	
@@ -1379,7 +1473,7 @@ var App = function() {
 	 * Spawn asteroid.
 	 */
 	this.spawnAsteroid = function() {
-		//console.log('spawnAsteroid, Game paused = ' + gamePaused);
+		console.log('spawnAsteroid, Game paused = ' + gamePaused);
 
 		// Sledge-hammer method to make sure no hidden asteroids will be spawned while the game is paused.
 		if (gamePaused) {
@@ -1434,6 +1528,10 @@ var App = function() {
 		// Create an empty sprite.
 		var sprite;
 
+		// Spawn only enemies of current level or below.
+		// No upper level enemies are spawned.
+		// In level 1 there are no enemies of level 2, but
+		// in level 2 there are both level 1 and 2 enemies.
 		var maxEnemy = level - 1;
 		var enemyCount = Object.keys(images.enemies).length - 1;
 		
@@ -1518,7 +1616,16 @@ var App = function() {
 			// Schedule next bullet.
 			this.schedule(images.enemyBullets[enemyId].delay, 'fire'); // 1000
 		};
-		enemy.schedule(300, 'fire'); // 500
+		
+		// Check if player has targeting power-up and disable enemy fire.
+		if (playerTargeting > 0) {
+			setTimeout(function() {
+				playerTargeting--;
+				targetingCounter.getSprite().setText(playerTargeting);
+			}, 1000);
+		} else {
+			enemy.schedule(300, 'fire'); // 500
+		}
 		
 		// Spawn another enemy.
 		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
