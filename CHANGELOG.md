@@ -1,5 +1,18 @@
 ## Changes
 
+**Version 1.1.8**
+- fixed endless spawning of asteroids if the game is paused or focus is lost. Hopefully it doesn't break again.
+- fixed timing and interval issues
+- fixed status display of power-ups so it doesn't overlap anymore
+- added sounds for spawning and collecting power-ups
+- added loading icon when showing highscore table
+
+**Version 1.1.7**
+- updated to WADE 4.0.1
+- added five power-ups, each comes in three sizes
+- added status display for power-ups
+- still investigating on that endless spawning of asteroids. Thought I already fixed that.
+
 **Version 1.1.6**
 - fixed issue where tier 2 could not be completed
 - added type safety

@@ -13,6 +13,7 @@ A simple space shooter based on the WADE game engine. Separated in five tiers wi
 - Basic health, score and level logic
 - Per-pixel collision logic
 - Highscore table
+- Different power-ups to support you on your mission
 
 ## Usage
 Use your mouse to move the spaceship around and click to fire. Your health gets restored and your fire rate is increased as you advance to the next level. Required hit points vary from enemy to enemy. Also larger asteroids must be shot multiple times before they are destroyed. In general the more shots required, the higher will be the reward.
@@ -31,12 +32,13 @@ You can also run the game without a database. In such case the highscore table w
 Play the latest stable version of the game on https://rekow.ch/overkill/ for free.
 
 ## Thanks
-This game makes use of the following frameworks, plugins and technologies.
+This game makes use of the following frameworks, plugins, resources and technologies.
 - [FontAwesome](https://fontawesome.com)
 - [jQuery](https://jquery.com)
 - [MySQL](https://mysql.com)
 - [PHP](https://php.net)
 - [Starscroll](http://bite-software.co.uk/starscroll/)
+- [Thomas Tamblyn (Lorc)](http://lorcblog.blogspot.com/)
 - [WADE game engine](http://clockworkchilli.com)
 
 Thank you for making this game possible!
