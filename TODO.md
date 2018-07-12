@@ -1,3 +1,3 @@
 **TODO**
-- Size of canvas is not adjusted in Opera upon switching to fullscreen and back.
-- Add some power-ups and stuff.
+- The size of canvas is not adjusted in Opera upon switching to fullscreen and back.
+- Adjust difficulty. Currently the game is way too easy.
