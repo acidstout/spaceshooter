@@ -197,6 +197,15 @@ input[type="text"].highscore {
 					overflow: visible;
 					width: 20%;
 				}
+				
+				#highscore > table > tbody > tr > td.img {
+					margin: 0 auto;
+					text-align: center;
+				}
+					#highscore > table > tbody > tr > td.img > img {
+						height: 48px;
+						width: 48px;
+					}
 
 
 #version {

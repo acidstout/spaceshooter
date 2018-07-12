@@ -10,18 +10,16 @@
 
 // TODO:
 /*
-	- finish power-up "missiles"
-		- define missile fire-button
+	- normalize sounds
 
 */
 
 // FIXME:
 /*
-	- check endless spawning of asteroids again :(
 	
 */
 
-var version = '1.1.7';
+var version = '1.1.8';
 
 
 /**
@@ -240,7 +238,9 @@ var App = function() {
 		hit         : '../sounds/hit.mp3',
 		explode     : '../sounds/explode.mp3',
 		loop        : '../sounds/loop.mp3',
-		menu        : '../sounds/menu.mp3'
+		menu        : '../sounds/menu.mp3',
+		spawn       : '../sounds/spawn.mp3',
+		powerup     : '../sounds/powerup.mp3'
 	};
 	
 	var toggleRendererTitle    = document.getElementById('toggleRendererTitle');
@@ -272,7 +272,7 @@ var App = function() {
 			console.log('Game resumed due to focus gain.');
 			
 			// Spawn asteroids.
-			nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+			nextAsteroid = wade.setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 
 			// Resume music.
 			if (musicPlaying) {
@@ -376,6 +376,8 @@ var App = function() {
 		wade[loadAudioFunction](sounds.explode);
 		wade[loadAudioFunction](sounds.loop);
 		wade[loadAudioFunction](sounds.menu);
+		wade[loadAudioFunction](sounds.spawn);
+		wade[loadAudioFunction](sounds.powerup);
 		
 		var checkLoadingStatus = null;
 		checkLoadingStatus = setInterval(function() {
@@ -511,7 +513,6 @@ var App = function() {
 			if (sissy) {
 				scoreVerb = Base64.decode('Q0hFQVRFRA=='); //'CHEATED';
 			} else {
-				//wade.app.saveHighscore(score);
 				$('#highscoreWrapper').fadeToggle();
 				wade.app.loadHighscore(score);
 			}
@@ -570,10 +571,10 @@ var App = function() {
 
 		// Initialize asteroids on the main screen. Prevents the use of images which are not loaded, yet.
 		var initAsteroidsInterval = null; 
-		initAsteroidsInterval = setTimeout(function() {
+		initAsteroidsInterval = setInterval(function() {
 			if (wade.getLoadingPercentage() >= 100) {
 				console.log('Initializing asteroids on main screen.');
-				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+				nextAsteroid = wade.setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 				clearInterval(initAsteroidsInterval);
 			}
 		}, 1000);
@@ -594,7 +595,7 @@ var App = function() {
 				gameBtnObj.style.display = 'none';
 				gameObj.style.cursor = 'none';
 
-				clearTimeout(nextAsteroid);
+				wade.clearTimeout(nextAsteroid);
 				wade.removeSceneObject(clickToStart);
 				wade.clearScene();
 				wade.removeUnusedLayers([ 1 ]);	// Remove all unused layers, but layer 1.
@@ -637,7 +638,7 @@ var App = function() {
 					}
 
 					oldHighScore = result;
-					clearTimeout(ajaxInterval);
+					clearInterval(ajaxInterval);
 				},
 				error(xhr, status, code) {
 					console.warn('getHighestScore(): AJAX call returned: ' + status + ': ' + code);
@@ -709,7 +710,7 @@ var App = function() {
 					
 					// Show highscore table.
 					$('#highscoreTable').html(highscoreHtml);
-					
+
 					// Put cursor into input field if player is allowed to enter his name.
 					if (hasInput) {
 						$('#playerName').focus();
@@ -1047,6 +1048,7 @@ var App = function() {
 								
 								// Is Power-Up?
 								if (overlapping[i].isPowerUp) {
+									wade.playAudio(sounds.powerup, false);
 									// Check type of power-up and decide what to do. 
 									switch (overlapping[i].name) {
 									case 'cannister':
@@ -1074,6 +1076,7 @@ var App = function() {
 									wade.removeSceneObject(overlapping[i]);
 									wade.removeObjectFromArrayByIndex(i, overlapping);
 									
+									hit = false;
 									break;
 								}
 								
@@ -1171,9 +1174,9 @@ var App = function() {
 						}
 
 						// Clear interval and timeouts.
+						wade.clearTimeout(nextEnemy);
+						wade.clearTimeout(nextAsteroid);
 						clearInterval(gameOverInterval);
-						clearTimeout(nextEnemy);
-						clearTimeout(nextAsteroid);
 						
 						// Clear scene and initialize app.
 						wade.clearScene();
@@ -1221,27 +1224,27 @@ var App = function() {
 		wade.addSceneObject(targetingIconObj);
 
 		var targetingSprite = new TextSprite(playerTargeting.toString(), '32pt Highspeed', '#f88', 'center');
-		targetingCounter = new SceneObject(targetingSprite, 0, 150 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		targetingCounter = new SceneObject(targetingSprite, 0, 170 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(targetingCounter);
 		
 		
 		// Add a missile counter. Left.
 		var missilesIconSprite = new Sprite(images.missilesIcon);
-		var missilesIconObj = new SceneObject(missilesIconSprite, 0, 210 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
+		var missilesIconObj = new SceneObject(missilesIconSprite, 0, 250 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(missilesIconObj);
 
 		var missilesSprite = new TextSprite(playerMissiles.toString(), '32pt Highspeed', '#f88', 'center');
-		missilesCounter = new SceneObject(missilesSprite, 0, 250 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		missilesCounter = new SceneObject(missilesSprite, 0, 310 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(missilesCounter);
 		
 		
 		// Add a shield counter. Left.
 		var shieldsIconSprite = new Sprite(images.shieldsIcon);
-		var shieldsIconObj = new SceneObject(shieldsIconSprite, 0, 310 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
+		var shieldsIconObj = new SceneObject(shieldsIconSprite, 0, 390 - (wade.getScreenWidth() / 2), -10 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(shieldsIconObj);
 
 		var shieldsSprite = new TextSprite(playerShields.toString(), '32pt Highspeed', '#f88', 'center');
-		shieldsCounter = new SceneObject(shieldsSprite, 0, 350 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
+		shieldsCounter = new SceneObject(shieldsSprite, 0, 450 - (wade.getScreenWidth() / 2), 4 - wade.getScreenHeight() / 2 + 30);
 		wade.addSceneObject(shieldsCounter);
 		
 		
@@ -1266,8 +1269,8 @@ var App = function() {
 
 		
 		// Spawn enemies every two seconds and asteroids every second.
-		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
-		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+		nextEnemy = wade.setTimeout(wade.app.spawnEnemy, enemyDelay);
+		nextAsteroid = wade.setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 
 	
@@ -1277,7 +1280,7 @@ var App = function() {
 	this.pauseGame = function() {
 		//console.log('Game paused.');
 		// Don't spawn asteroids on main screen if window has no focus.
-		clearTimeout(nextAsteroid);
+		wade.clearTimeout(nextAsteroid);
 		
 		// Pause music.
 		wade.app.musicOff();
@@ -1286,7 +1289,7 @@ var App = function() {
 			gamePaused = true;
 			
 			// Don't spawn enemies.
-			clearTimeout(nextEnemy);
+			wade.clearTimeout(nextEnemy);
 			
 			// Don't move ship.
 			wade.app.onMouseMove = null;
@@ -1320,8 +1323,8 @@ var App = function() {
 				gamePaused = false;
 				console.log('Game resumed by user.');
 				gameObj.style.cursor = 'none';
-				nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
-				nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+				nextEnemy = wade.setTimeout(wade.app.spawnEnemy, enemyDelay);
+				nextAsteroid = wade.setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 				wade.removeSceneObject(pauseSpriteObj);
 				
 				// Resume music.
@@ -1458,6 +1461,7 @@ var App = function() {
 			powerUp.name = powerUpType.name;
 			powerUp.damage = 0;
 			
+			wade.playAudio(sounds.spawn, false);
 			
 			/**
 			 * When the powerup has finished moving, delete it.
@@ -1510,7 +1514,7 @@ var App = function() {
 		};
 
 		// Spawn another asteroid.
-		nextAsteroid = setTimeout(wade.app.spawnAsteroid, asteroidDelay);
+		nextAsteroid = wade.setTimeout(wade.app.spawnAsteroid, asteroidDelay);
 	};
 	
 	
@@ -1619,7 +1623,7 @@ var App = function() {
 		
 		// Check if player has targeting power-up and disable enemy fire.
 		if (playerTargeting > 0) {
-			setTimeout(function() {
+			wade.setTimeout(function() {
 				playerTargeting--;
 				targetingCounter.getSprite().setText(playerTargeting);
 			}, 1000);
@@ -1628,7 +1632,7 @@ var App = function() {
 		}
 		
 		// Spawn another enemy.
-		nextEnemy = setTimeout(wade.app.spawnEnemy, enemyDelay);
+		nextEnemy = wade.setTimeout(wade.app.spawnEnemy, enemyDelay);
 	};
 	
 	
@@ -1647,8 +1651,8 @@ var App = function() {
 		wade.storeLocalObject(dataNames.data, gameData);
 
 		// Reset game state to activate new settings.
-		clearTimeout(nextEnemy);
-		clearTimeout(nextAsteroid);
+		wade.clearTimeout(nextEnemy);
+		wade.clearTimeout(nextAsteroid);
 		wade.setMainLoop(null, 'fire');
 		wade.setMainLoop(null, 'die');
 		gameStarted = false;
