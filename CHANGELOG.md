@@ -1,5 +1,9 @@
 ## Changes
 
+**Version 1.1.9 Beta** (work in progress)
+- fixed score needed to advance to next level not being reset after game over.
+- modified calculation of score needed to advance to next level
+
 **Version 1.1.8**
 - fixed endless spawning of asteroids if the game is paused or focus is lost. Hopefully it doesn't break again.
 - fixed timing and interval issues
