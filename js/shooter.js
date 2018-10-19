@@ -19,7 +19,7 @@
 	
 */
 
-var version = '1.1.9 Beta';
+var version = '1.1.9';
 
 
 /**
@@ -608,6 +608,12 @@ var App = function() {
 				// Reset level divisor
 				divisor = 1000;
 				
+				// Reset asteroid delay
+				asteroidDelay = 1000;
+				
+				// Reset enemy delay
+				enemyDelay = 1000;
+				
 				// Reset stats
 				stats = {
 						missiles: {
@@ -1037,6 +1043,10 @@ var App = function() {
 				if (asteroidDelay > 400) {
 					asteroidDelay -= 100;
 				}
+				
+				if (level >= 5) {
+					asteroidDelay = 200;
+				}
 
 				// Increase firerate.
 				if (fireRate < 50) {
@@ -1053,7 +1063,13 @@ var App = function() {
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
 			missilesCounter.getSprite().setText(playerMissiles);
-			scoreCounter.getSprite().setText(Math.floor(score) + ', Left: ' + (divisor - Math.floor(score)));
+			
+			if (level >= 5) {
+				scoreCounter.getSprite().setText(Math.floor(score) + ' / OVERKILL!');
+			} else {
+				scoreCounter.getSprite().setText(Math.floor(score) + ' / ' + (divisor - Math.floor(score)));
+			}
+			
 			shieldsCounter.getSprite().setText(playerShields);
 			targetingCounter.getSprite().setText(playerTargeting);
 		}, 'fire');
@@ -1597,6 +1613,12 @@ var App = function() {
 		
 		// Select random image of enemy as sprite.
 		var enemyId = wade.app.getRandomInt(0, maxEnemy);
+		
+		// From level 5 on spawn only huge motherships.
+		if (level >= 5) {
+			enemyId = 4;
+		}
+		
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.

@@ -1,8 +1,10 @@
 ## Changes
 
-**Version 1.1.9 Beta** (work in progress)
-- fixed score needed to advance to next level not being reset after game over.
-- modified calculation of score needed to advance to next level
+**Version 1.1.9**
+- fixed distorted audio of power-ups. Cause was the default system ACM being unable to process the audio properly while the LAV decoder works fine.
+- modified calculation of score needed to advance to next level.
+- cleaned up variables (e.g. properly reset variables to their initial values).
+- from level 5 on the "LEFT: 1234567890" score display shows "OVERKILL!" and only huge motherships and lots of asteroids are spawned. 
 
 **Version 1.1.8**
 - fixed endless spawning of asteroids if the game is paused or focus is lost. Hopefully it doesn't break again.
