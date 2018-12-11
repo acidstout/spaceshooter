@@ -19,7 +19,7 @@
 	
 */
 
-var version = '1.1.8';
+var version = '1.1.9';
 
 
 /**
@@ -43,6 +43,16 @@ var App = function() {
 	var fireRateTemp   = 4;							// Temporary fire rate (e.g. overrides default fire rate if cheat-mode is enabled).
 	var fireDamage     = 200;						// How much damage is caused by one shot of the player's ship.
 	var missileDamage  = 1000;						// Damage caused by missile is much higher than normal fire damage.
+	var stats          = {							// Count total, hit and missed shots. Is used to calculate bonus, which is added on top of the achieved score.
+			missiles: {
+				fired: 0,
+				hit: 0
+			},
+			bullets: {
+				fired: -1,							// Correct unintended firing on game start.
+				hit: 0
+			}
+	};
 	
 	var enemyHealth    = [ 400, 600, 800, 1500, 5000 ];	// Enemy's health.
 	var enemyDelay     = 2000;						// How long to wait from spawning one enemy to spawning the next one.
@@ -594,6 +604,27 @@ var App = function() {
 				// Hide toggle buttons and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				gameObj.style.cursor = 'none';
+				
+				// Reset level divisor
+				divisor = 1000;
+				
+				// Reset asteroid delay
+				asteroidDelay = 1000;
+				
+				// Reset enemy delay
+				enemyDelay = 1000;
+				
+				// Reset stats
+				stats = {
+						missiles: {
+							fired: 0,
+							hit: 0
+						},
+						bullets: {
+							fired: -1, // Correct unintended firing on game start.
+							hit: 0
+						}
+				};
 
 				wade.clearTimeout(nextAsteroid);
 				wade.removeSceneObject(clickToStart);
@@ -884,16 +915,20 @@ var App = function() {
 				
 				// Decide whether to use missiles of normal bullets.
 				if (playerMissiles > 0) {
+					stats.missiles.fired++;
 					playerMissiles--;
 					bulletAudio = sounds.missile;
 					sprite = new Sprite(images.shipMissile);
 					missileShot = true;
 				} else {
+					stats.bullets.fired++;
 					bulletAudio = sounds.shoot;
 					sprite = new Sprite(images.shipBullet);
 					missileShot = false;
 				}
-				
+
+				//console.log(stats.toSource());
+
 				// Create sprite of selected bullet image.
 				var bullet = new SceneObject(sprite, 0, shipPosition.x, shipPosition.y - shipSize.y / 2);
 				wade.addSceneObject(bullet);
@@ -929,6 +964,11 @@ var App = function() {
 						for (var j = 0; j < colliders.length; j++) {
 
 							if (colliders[j].isEnemy) {
+								if (playerMissiles > 0) {
+									stats.missiles.hit++;
+								} else {
+									stats.bullets.hit++;
+								}
 								// Create explosion and play hit sound.
 								var position = colliders[j].getPosition();
 								wade.app.explosion(position, 1);
@@ -979,12 +1019,12 @@ var App = function() {
 
 			// console.log("Level: " + level + "\n Score / Divisor: " + Math.floor(score / divisor));
 			if (Math.floor(score / divisor) > 0) {
-				// console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
+				//console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
 
 				// Increase score required to fill up health (e.g. level 1 = 1.000, level 2 = 10.000, level 3 = 100.000, ...).
 				if (score >= divisor) {
-					divisor = Math.pow(10, level) * divisor;
 					level += 1;
+					divisor = Math.pow(10, level + 2); // * Math.floor(divisor / 10);
 				}
 
 				//console.log("(b) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
@@ -1003,6 +1043,10 @@ var App = function() {
 				if (asteroidDelay > 400) {
 					asteroidDelay -= 100;
 				}
+				
+				if (level >= 5) {
+					asteroidDelay = 200;
+				}
 
 				// Increase firerate.
 				if (fireRate < 50) {
@@ -1019,7 +1063,13 @@ var App = function() {
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
 			missilesCounter.getSprite().setText(playerMissiles);
-			scoreCounter.getSprite().setText(Math.floor(score) + ', Left: ' + (divisor - Math.floor(score)));
+			
+			if (level >= 5) {
+				scoreCounter.getSprite().setText(Math.floor(score) + ' / OVERKILL!');
+			} else {
+				scoreCounter.getSprite().setText(Math.floor(score) + ' / ' + (divisor - Math.floor(score)));
+			}
+			
 			shieldsCounter.getSprite().setText(playerShields);
 			targetingCounter.getSprite().setText(playerTargeting);
 		}, 'fire');
@@ -1149,6 +1199,24 @@ var App = function() {
 				wade.setMainLoop(null, 'fire');
 				wade.setMainLoop(null, 'die');
 
+
+				// Calculate shoot/hit ratio
+				var bulletsRatio =  (stats.bullets.fired == 0) ? 0 : Math.round((stats.bullets.hit / stats.bullets.fired) * 100);
+				var missilesRatio = (stats.missiles.fired == 0) ? 0 : Math.round((stats.missiles.hit / stats.missiles.fired) * 100);
+
+				// Calculate bonus
+				var bonusscore = (bulletsRatio + missilesRatio) * 100;
+				
+				// Round up bonus to the next full thousand (e.g. 500 -> 1000, 1200 -> 2000, 1800 -> 2000, 2001 -> 3000, ...)
+				bonusscore = Math.max(Math.round(bonusscore / 1000) *1000, 1000);
+				
+				console.log(bonusscore);
+				
+				/*
+				console.log('Bullets hit ratio: ' + bulletsRatio + '%, ' + stats.bullets.hit + '/' + stats.bullets.fired);
+				console.log('Missiles hit ratio: ' + missilesRatio + '%, ' + stats.missiles.hit + '/' + stats.missiles.fired);
+				*/
+				
 				// Check high score
 				if (!sissy && score > oldHighScore) {
 					gameData = {
@@ -1545,6 +1613,12 @@ var App = function() {
 		
 		// Select random image of enemy as sprite.
 		var enemyId = wade.app.getRandomInt(0, maxEnemy);
+		
+		// From level 5 on spawn only huge motherships.
+		if (level >= 5) {
+			enemyId = 4;
+		}
+		
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
