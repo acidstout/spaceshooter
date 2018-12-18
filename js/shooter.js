@@ -358,7 +358,7 @@ var App = function() {
 		}
 
 		// Power-Ups
-		Object.keys(powerUps).forEach(key => {
+		Object.keys(powerUps).forEach(function(key) {
 			//console.log(powerUps[key].images);
 			for (i = 0; i < powerUps[key].images.length; i++) {
 				wade.loadImage(powerUps[key].images[i]);
@@ -654,7 +654,7 @@ var App = function() {
 				url: 'php/backend.php',
 				type: 'POST',
 				data: 'data=' + data,
-				success(result) {
+				complete: function(result) {
 					if (result === null || result === '' || result === 'FAILED') {
 						//result = 0;
 						result = oldHighScore;
@@ -671,7 +671,7 @@ var App = function() {
 					oldHighScore = result;
 					clearInterval(ajaxInterval);
 				},
-				error(xhr, status, code) {
+				error: function(xhr, status, code) {
 					console.warn('getHighestScore(): AJAX call returned: ' + status + ': ' + code);
 				}
 			});
@@ -697,7 +697,7 @@ var App = function() {
 			url: 'php/backend.php',
 			type: 'POST',
 			data: 'data=' + data,
-			success(result) {
+			complete: function(result) {
 				if (result !== 'FAILED') {
 					//console.log('Score: ' + currentScore);
 					
@@ -774,7 +774,7 @@ var App = function() {
 					console.warn('AJAX call by loadHighscore() returned: ' + result);
 				}
 			},
-			error(xhr, status, code) {
+			error: function(xhr, status, code) {
 				console.warn('AJAX call by loadHighscore() returned: ' + status + ': ' + code);
 				$('.msg').html(msg);
 			}
@@ -804,7 +804,7 @@ var App = function() {
 			url: 'php/backend.php',
 			type: 'POST',
 			data: 'data=' + data,
-			success(result) {
+			complete: function(result) {
 				if (result === 'OK') {
 					msg = 'Highscore saved!';
 				} else {
@@ -820,7 +820,7 @@ var App = function() {
 				
 				$('.msg').html(msg);
 			},
-			error(xhr, status, code) {
+			error: function(xhr, status, code) {
 				console.warn('saveHighscore() returned: ' + status + ': ' + code);
 				$('.msg').html(msg);
 			}
@@ -1181,6 +1181,10 @@ var App = function() {
 					playerMissiles = 0;
 				}
 
+				if (playerTargeting < 0 || playerTargeting === 'NaN') {
+					playerTargeting = 0;
+				}
+
 				
 				// Update player's status (e.g. health, missiles, shields ...)
 				healthCounter.getSprite().setText(playerHealth);
@@ -1207,10 +1211,11 @@ var App = function() {
 				// Calculate bonus
 				var bonusscore = (bulletsRatio + missilesRatio) * 100;
 				
-				// Round up bonus to the next full thousand (e.g. 500 -> 1000, 1200 -> 2000, 1800 -> 2000, 2001 -> 3000, ...)
-				bonusscore = Math.max(Math.round(bonusscore / 1000) *1000, 1000);
-				
-				console.log(bonusscore);
+				// Round up bonus to the next full thousand (e.g. 500 -> 1000, 1200 -> 2000, 1800 -> 2000, 2001 -> 3000 ...)
+				bonusscore = Math.max(Math.round(bonusscore / 1000) * 1000, 1000);
+
+				// Add bonus to score.
+				score += bonusscore;
 				
 				/*
 				console.log('Bullets hit ratio: ' + bulletsRatio + '%, ' + stats.bullets.hit + '/' + stats.bullets.fired);
@@ -1699,6 +1704,10 @@ var App = function() {
 		if (playerTargeting > 0) {
 			wade.setTimeout(function() {
 				playerTargeting--;
+				// Prevent "playerTargeting" from having negative value.
+				if (playerTargeting < 0 || playerTargeting === 'NaN') {
+					playerTargeting = 0;
+				}
 				targetingCounter.getSprite().setText(playerTargeting);
 			}, 1000);
 		} else {
@@ -1789,7 +1798,7 @@ var App = function() {
 		
 		// State = "running" or "suspended"
 		if (context.state === 'suspended') {
-			context.resume().then(() => {
+			context.resume().then(function() {
 				console.log('Audio context resumed.');
 			});
 		}

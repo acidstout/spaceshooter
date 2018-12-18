@@ -2,11 +2,15 @@
 
 @font-face {
 	font-family: 'Highspeed';
-	src: url('../fonts/highspeed.woff') format('woff'), url('../fonts/highspeed.ttf') format('truetype');
+	src: url('../fonts/highspeed.eot');
+	src: url('../fonts/highspeed.eot?#iefix') format('embedded-opentype'),
+		url('../fonts/highspeed.woff2') format('woff2'),
+		url('../fonts/highspeed.woff') format('woff'),
+		url('../fonts/highspeed.ttf') format('truetype'),
+		url('../fonts/highspeed.svg#Highspeed') format('svg');
 	font-weight: normal;
 	font-style: normal;
 }
-
 
 
 html, body {
