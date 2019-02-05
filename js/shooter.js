@@ -1,25 +1,13 @@
-/**
+/*!
+ * Space shooter
+ * A WADE game engine based space shooter with parallax starfield background.
  *
- *	Space shooter
- *	A WADE game engine based space shooter with parallax starfield background.
- *
- *	@author nrekow
- *
+ * @author nrekow
+ * @copyright (C) 2019 Nils Rekow
+ * @license GPL-3, http://www.gnu.org/licenses/
  */
 
-
-// TODO:
-/*
-	- normalize sounds
-
-*/
-
-// FIXME:
-/*
-	
-*/
-
-var version = '1.1.9';
+var version = '1.2';
 
 
 /**
@@ -44,14 +32,14 @@ var App = function() {
 	var fireDamage     = 200;						// How much damage is caused by one shot of the player's ship.
 	var missileDamage  = 1000;						// Damage caused by missile is much higher than normal fire damage.
 	var stats          = {							// Count total, hit and missed shots. Is used to calculate bonus, which is added on top of the achieved score.
-			missiles: {
-				fired: 0,
-				hit: 0
-			},
-			bullets: {
-				fired: -1,							// Correct unintended firing on game start.
-				hit: 0
-			}
+		missiles: {
+			fired: 0,
+			hit: 0
+		},
+		bullets: {
+			fired: -1,							// Correct unintended firing on game start.
+			hit: 0
+		}
 	};
 	
 	var enemyHealth    = [ 400, 600, 800, 1500, 5000 ];	// Enemy's health.
@@ -616,14 +604,14 @@ var App = function() {
 				
 				// Reset stats
 				stats = {
-						missiles: {
-							fired: 0,
-							hit: 0
-						},
-						bullets: {
-							fired: -1, // Correct unintended firing on game start.
-							hit: 0
-						}
+					missiles: {
+						fired: 0,
+						hit: 0
+					},
+					bullets: {
+						fired: -1, // Correct unintended firing on game start.
+						hit: 0
+					}
 				};
 
 				wade.clearTimeout(nextAsteroid);
@@ -653,8 +641,11 @@ var App = function() {
 			$.ajax({
 				url: 'php/backend.php',
 				type: 'POST',
+				headers: {
+					'CsrfToken': $('meta[name="csrf-token"]').attr('content')
+				},
 				data: 'data=' + data,
-				complete: function(result) {
+				success: function(result) {
 					if (result === null || result === '' || result === 'FAILED') {
 						//result = 0;
 						result = oldHighScore;
@@ -689,94 +680,106 @@ var App = function() {
 
 		var json          = JSON.stringify(payload);
 		var data          = Base64.encode(json);
-		var msg           = 'Highscore not loaded!';
+		var msg           = 'Couldn\'t get highscore :(';
 		
 		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 
 		$.ajax({
 			url: 'php/backend.php',
 			type: 'POST',
+			headers: {
+				'CsrfToken': $('meta[name="csrf-token"]').attr('content')
+			},
 			data: 'data=' + data,
-			complete: function(result) {
+			success: function(result) {
 				if (result !== 'FAILED') {
 					//console.log('Score: ' + currentScore);
-					
+
 					// Will contain our resulting HTML.
 					var highscoreHtml = '';
 					
 					// Prepare input field in order to reuse it.
 					var highscoreInputField = '<tr><td id="playerNameCell"><input type="text" class="highscore" id="playerName" maxlength="20" value="" placeholder="Enter your name"/></td><td>' + currentScore + '</td></tr>';
+					var highscoreObj = null;
 					
-					// Parse JSON formatted result and return an object.
-					var highscoreObj = JSON.parse(result);
+					try {
+						// Parse JSON formatted result and return an object.
+						highscoreObj = JSON.parse(result);
+					} catch (e) {
+						console.warn('Decoding AJAX response failed: ' + e.message);
+						$('#highscoreTable').html('<tr><td colspan="2">' + msg + '</td></tr>');
+					}
 					
-					// Get number of entries of object.
-					var highscoreObjCount = Object.keys(highscoreObj).length;
-					
-					// Flag to check if an input field has been added to the HTML code.
-					var hasInput = false;
-					
-					// Iterate over each entry of the object.
-					$.each(highscoreObj, function(i, item) {
-						// Add input field if player's score is higher than the current entry.
-						if (currentScore > 0 && currentScore >= item.score && !hasInput) {
+					if (highscoreObj !== null) {
+						// Get number of entries of object.
+						var highscoreObjCount = Object.keys(highscoreObj).length;
+						
+						// Flag to check if an input field has been added to the HTML code.
+						var hasInput = false;
+						
+						// Iterate over each entry of the object.
+						$.each(highscoreObj, function(i, item) {
+							// Add input field if player's score is higher than the current entry.
+							if (currentScore > 0 && currentScore >= item.score && !hasInput) {
+								highscoreHtml += highscoreInputField;
+								hasInput = true;
+							}
+							
+							// Limit number of rows to 10.
+							if (i < 9 || !hasInput) {
+								highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
+							}
+							//console.log(item.player + ' = ' + item.score);
+						});
+						
+						// If score is lower than the maximum score in the highscore table
+						// and if there are less than 10 entries in the highscore then allow
+						// the player to enter his name.
+						if (highscoreObjCount < 10 && !hasInput && currentScore > 0) {
 							highscoreHtml += highscoreInputField;
 							hasInput = true;
 						}
 						
-						// Limit number of rows to 10.
-						if (i < 9 || !hasInput) {
-							highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
-						}
-						//console.log(item.player + ' = ' + item.score);
-					});
-					
-					// If score is lower than the maximum score in the highscore table
-					// and if there are less than 10 entries in the highscore then allow
-					// the player to enter his name.
-					if (highscoreObjCount < 10 && !hasInput && currentScore > 0) {
-						highscoreHtml += highscoreInputField;
-						hasInput = true;
-					}
-					
-					// Show highscore table.
-					$('#highscoreTable').html(highscoreHtml);
-
-					// Put cursor into input field if player is allowed to enter his name.
-					if (hasInput) {
-						$('#playerName').focus();
-						
-						$('#playerName').on('keypress', function(e) {
-							// Check for Enter key
-							if (e.keyCode === 13) {
-								e.preventDefault();
-								
-								var playerName = $('#playerName').val();
-								
-								if (playerName.length > 0) {
-									$(this).prop('disabled', true);
-		
-									// Save player's name and score
-									wade.app.saveHighscore(currentScore, playerName);
+						// Show highscore table.
+						$('#highscoreTable').html(highscoreHtml);
+	
+						// Put cursor into input field if player is allowed to enter his name.
+						if (hasInput) {
+							$('#playerName').focus();
+							
+							$('#playerName').on('keypress', function(e) {
+								// Check for Enter key
+								if (e.keyCode === 13) {
+									e.preventDefault();
 									
-									// Reset player's score after saving it.
-									score = 0;
+									var playerName = $('#playerName').val();
 									
-									$('#playerName').remove();
-									$('#playerNameCell').text(playerName);
+									if (playerName.length > 0) {
+										$(this).prop('disabled', true);
+			
+										// Save player's name and score
+										wade.app.saveHighscore(currentScore, playerName);
+										
+										// Reset player's score after saving it.
+										score = 0;
+										
+										$('#playerName').remove();
+										$('#playerNameCell').text(playerName);
+									}
+									
+									return false;
 								}
-								
-								return false;
-							}
-						});
+							});
+						}
 					}
 				} else {
 					console.warn('AJAX call by loadHighscore() returned: ' + result);
+					$('#highscoreTable').html('<tr><td colspan="2">' + msg + '</td></tr>');
 				}
 			},
 			error: function(xhr, status, code) {
 				console.warn('AJAX call by loadHighscore() returned: ' + status + ': ' + code);
-				$('.msg').html(msg);
+				$('#highscoreTable').html('<tr><td colspan="2">' + msg + '</td></tr>');
 			}
 		});
 	};
@@ -789,8 +792,6 @@ var App = function() {
 		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 		currentPlayer = (typeof(currentPlayer) !== 'undefined') ? currentPlayer : 'Player';
 
-		var msg = 'Highscore not saved!';
-		
 		var payload = {
 			'action' : 'saveScore',
 			'player' : currentPlayer,
@@ -803,11 +804,12 @@ var App = function() {
 		$.ajax({
 			url: 'php/backend.php',
 			type: 'POST',
+			headers: {
+				'CsrfToken': $('meta[name="csrf-token"]').attr('content')
+			},
 			data: 'data=' + data,
-			complete: function(result) {
-				if (result === 'OK') {
-					msg = 'Highscore saved!';
-				} else {
+			success: function(result) {
+				if (result !== 'OK') {
 					// Save score in LocalDB if database connection failed.
 					gameData = {
 						force2d: force2d,
@@ -817,12 +819,9 @@ var App = function() {
 						
 					wade.storeLocalObject(dataNames.data, gameData);
 				}
-				
-				$('.msg').html(msg);
 			},
 			error: function(xhr, status, code) {
 				console.warn('saveHighscore() returned: ' + status + ': ' + code);
-				$('.msg').html(msg);
 			}
 		});
 	};

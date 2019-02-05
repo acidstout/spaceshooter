@@ -1,4 +1,13 @@
 <?php
+/**
+ * Space shooter
+ * A WADE game engine based space shooter with parallax starfield background.
+ *
+ * @author nrekow
+ * @copyright (C) 2019 Nils Rekow
+ * @license GPL-3, http://www.gnu.org/licenses/
+ */
+
 
 /**
  * Tries to establish a database connection
@@ -6,6 +15,9 @@
  * @return PDO\Wrapper|false
  */
 function connectToDatabase() {
+	// Init $conn as empty array to avoid warnings in Eclipse. Gets filled in connect.php if that file exists.
+	$conn = array();
+	
 	if (!file_exists('connect.php')) {
 		return false;
 	}
@@ -81,7 +93,7 @@ function getHighestScore($db) {
 	$msg = $db->ErrorMsg() . "\n" . $sql;
 	log_msg($msg);
 
-	return false;
+	return 'FAILED';
 }
 
 
@@ -114,17 +126,20 @@ function loadScore($db) {
 				'score' => $result['score']
 			);
 		}
-		
-		$results = json_encode($tmp, JSON_UNESCAPED_UNICODE);
+
+		return $tmp;
+		/*
+		$results = json_encode($tmp, JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT);
 		unset($tmp);
 		
 		return $results;
+		*/
 	}
 	
 	$msg = $db->ErrorMsg() . "\n" . $sql;
 	log_msg($msg);
 	
-	return false;
+	return 'FAILED';
 }
 
 
@@ -166,9 +181,22 @@ function isHighscore($db, $score) {
  * @return string
  */
 function saveScore($db, $player, $score) {
+	// Sanitize input
 	$player = preg_replace('/[^a-zA-Z0-9\s]/', '', $player);
 	$player = truncate($player, 20);
 	$score  = preg_replace('/\D/', '', $score);
+	
+	// Make sure we don't exceed the limit. Requires PHP's GMP extension to be loaded.
+	//
+	// Since PHP uses signed integers and SQL uses unsigned integers, we use PHP_INT_MAX
+	// as limit (e.g. limit of BIGINT = PHP_INT_MAX * 2). However, in normal situations
+	// this case should never happen, but we need to take care of it anyway.
+	//
+	if (extension_loaded('gmp')) {
+		if (gmp_cpm(gmp_abs($score), PHP_INT_MAX) === 1) {
+			$score = PHP_INT_MAX;
+		}
+	}
 	
 	if (isHighscore($db, $score)) {
 		$sql = "INSERT INTO highscores (player, score) VALUES (?, ?);";
@@ -189,7 +217,7 @@ function saveScore($db, $player, $score) {
 /**
  * Evaluate POST requests
  * 
- * @return string|boolean
+ * @return string
  */
 function evaluatePost($post) {
 	$db = connectToDatabase();
@@ -197,38 +225,71 @@ function evaluatePost($post) {
 		log_msg('Failed to connect to database.', 'FAILED');
 		return false;
 	}
+
+	if (isset($post['log']) && !empty($post['log'])) {
+		log_msg($post);
+	}
 	
 	if (isset($post['data']) && !empty($post['data'])) {
 		$json = base64_decode($post['data']);
 		$data = json_decode($json);
+		$result = '';
 		
 		if (isset($data->action)) {
 			switch ($data->action) {
 				case 'saveScore':
 					if (isset($data->player) && !empty($data->player) && isset($data->score) && !empty($data->score)) {
-						echo saveScore($db, $data->player, $data->score);
+						$result = saveScore($db, $data->player, $data->score);
 					}
 					break;
 				case 'loadScore':
-					echo loadScore($db);
+					$result = loadScore($db);
 					break;
 				case 'getHighestScore':
-					echo getHighestScore($db);
+					$result = getHighestScore($db);
 					break;
 			}
 		}
+		
+		$result = json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
+		if ($result !== false) {
+			return $result;
+		}
 	}
 	
-	if (isset($post['log']) && !empty($post['log'])) {
-		log_msg($post);
-	}
+	return 'FAILED';
 }
+
+
+
 
 /**
  * Init
  */
-if (isset($_POST) && count($_POST) > 0) {
-	evaluatePost($_POST);
+// Validate request.
+if (file_exists('bbq.php')) {
+	include_once 'bbq.php';
+	bbq_core();
 }
 
-die();
+// Start session and set CSRF token if not already done.
+session_start();
+if (empty($_SESSION['csrf_token'])) {
+	$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+if (isset($_POST) && count($_POST) > 0) {
+	// Check headers for valid CSRF token.
+	$headers = apache_request_headers();
+	if ( !isset($headers['CsrfToken']) || $headers['CsrfToken'] !== $_SESSION['csrf_token'] ) {
+		// Wrong or missing CSRF token.
+		header('HTTP/1.1 403 Forbidden');
+		header('Status: 403 Forbidden');
+		header('Connection: Close');
+		die();
+	}
+	
+	// Evaluate our POST request.
+	echo evaluatePost($_POST);
+	die();
+}

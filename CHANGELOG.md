@@ -1,5 +1,12 @@
 ## Changes
 
+**Version 1.2**
+- added Block Bad Queries (BBQ) script by Jeff Starr
+- added CSRF token to secure AJAX requests.
+- added licenses of used vendor parts.
+- fixed potential undefined index error in BBQ.
+- put the whole application under the GPL-3 license. 
+
 **Version 1.1.9**
 - fixed counter of no-target addon getting values lower than 0.
 - fixed distorted audio of power-ups. Cause was the default system ACM being unable to process the audio properly while the LAV decoder works fine.
