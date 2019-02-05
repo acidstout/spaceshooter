@@ -261,6 +261,62 @@ function evaluatePost($post) {
 }
 
 
+if (!function_exists('apache_request_headers')) {
+	/**
+	 * Workaround to get request headers from nginx web-server.
+	 * 
+	 * @return array
+	 */
+	function apache_request_headers() {
+		$headers = array();
+		$regex_http = '/\AHTTP_/';
+		$exceptions = array(
+			'CONTENT_TYPE'   => 'Content-Type',
+			'CONTENT_LENGTH' => 'Content-Length',
+			'CONTENT_MD5'    => 'Content-Md5',
+		);
+		
+		foreach ($_SERVER as $server_key => $server_val) {
+			if (preg_match($regex_http, $server_key)) {
+				$headers_key = preg_replace($regex_http, '', $server_key);
+				$regex_matches = array();
+				
+				// Try to restore the original letter case.
+				$regex_matches = explode('_', $headers_key);
+				
+				if (count($regex_matches) > 0 and strlen($headers_key) > 2) {
+					foreach($regex_matches as $regex_key => $regex_val) {
+						// Special case for DNT header.
+						if (strtolower($regex_key) === 'dnt') {
+							$regex_matches[$regex_key] = $regex_val;
+						} else {
+							$regex_matches[$regex_key] = ucfirst(strtolower($regex_val));
+						}
+					}
+					
+					$headers_key = implode('-', $regex_matches);
+				}
+				
+				$headers[$headers_key] = $server_val;
+			} else if (isset($exceptions[$server_key])) {
+				$headers[$exceptions[$server_key]] = $server_val;
+			}
+		}
+		
+		if (!isset($headers['Authorization'])) {
+			if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+				$headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+			} elseif (isset($_SERVER['PHP_AUTH_USER'])) {
+				$basic_pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : '';
+				$headers['Authorization'] = 'Basic ' . base64_encode($_SERVER['PHP_AUTH_USER'] . ':' . $basic_pass);
+			} elseif (isset($_SERVER['PHP_AUTH_DIGEST'])) {
+				$headers['Authorization'] = $_SERVER['PHP_AUTH_DIGEST'];
+			}
+		}
+		
+		return $headers;
+	}
+}
 
 
 /**
@@ -281,7 +337,7 @@ if (empty($_SESSION['csrf_token'])) {
 if (isset($_POST) && count($_POST) > 0) {
 	// Check headers for valid CSRF token.
 	$headers = apache_request_headers();
-	if ( !isset($headers['CsrfToken']) || $headers['CsrfToken'] !== $_SESSION['csrf_token'] ) {
+	if ( !isset($headers['Csrf-Token']) || $headers['Csrf-Token'] !== $_SESSION['csrf_token'] ) {
 		// Wrong or missing CSRF token.
 		header('HTTP/1.1 403 Forbidden');
 		header('Status: 403 Forbidden');

@@ -4,6 +4,7 @@
 - added Block Bad Queries (BBQ) script by Jeff Starr
 - added CSRF token to secure AJAX requests.
 - added licenses of used vendor parts.
+- added nginx compatibility
 - fixed potential undefined index error in BBQ.
 - put the whole application under the GPL-3 license. 
 

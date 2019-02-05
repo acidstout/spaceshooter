@@ -642,7 +642,7 @@ var App = function() {
 				url: 'php/backend.php',
 				type: 'POST',
 				headers: {
-					'CsrfToken': $('meta[name="csrf-token"]').attr('content')
+					'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
 				},
 				data: 'data=' + data,
 				success: function(result) {
@@ -688,7 +688,7 @@ var App = function() {
 			url: 'php/backend.php',
 			type: 'POST',
 			headers: {
-				'CsrfToken': $('meta[name="csrf-token"]').attr('content')
+				'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
 			},
 			data: 'data=' + data,
 			success: function(result) {
@@ -805,7 +805,7 @@ var App = function() {
 			url: 'php/backend.php',
 			type: 'POST',
 			headers: {
-				'CsrfToken': $('meta[name="csrf-token"]').attr('content')
+				'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
 			},
 			data: 'data=' + data,
 			success: function(result) {
