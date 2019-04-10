@@ -7,7 +7,7 @@
  * @license GPL-3, http://www.gnu.org/licenses/
  */
 
-var version = '1.2';
+var version = '1.2.1';
 
 
 /**
@@ -639,7 +639,7 @@ var App = function() {
 			var data = Base64.encode(json);
 
 			$.ajax({
-				url: 'php/backend.php',
+				url: 'assets/php/backend.php',
 				type: 'POST',
 				headers: {
 					'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
@@ -685,7 +685,7 @@ var App = function() {
 		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 
 		$.ajax({
-			url: 'php/backend.php',
+			url: 'assets/php/backend.php',
 			type: 'POST',
 			headers: {
 				'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
@@ -802,7 +802,7 @@ var App = function() {
 		var data = Base64.encode(json);
 			
 		$.ajax({
-			url: 'php/backend.php',
+			url: 'assets/php/backend.php',
 			type: 'POST',
 			headers: {
 				'Csrf-Token': $('meta[name="csrf-token"]').attr('content')

@@ -8,14 +8,14 @@
  * @license GPL-3, http://www.gnu.org/licenses/
  */
 
- /**
+/**
  * Enter your database credentials here. 
  * 
  * @var array $conn
  */
 $conn = array(
 		'host' => 'localhost',
-		'user' => 'db_user',
+		'user' => 'overkill_usr',
 		'pass' => 'secret',
 		'base' => 'overkill'
 );

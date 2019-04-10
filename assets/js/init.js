@@ -34,7 +34,7 @@ function log(param) {
 	if (debug) {
 		if (typeof(param) !== 'undefined') {
 			$.ajax({
-				url: 'php/backend.php',
+				url: 'assets/php/backend.php',
 				type: 'POST',
 				data: 'log=' + param,
 				success() {
@@ -115,7 +115,7 @@ function getBrowserVersion(browserEngineRegEx, parseVersion) {
 $(function() {
 	'use strict';
 	// Choose game file.
-	var gamefile = 'js/shooter.';
+	var gamefile = 'assets/js/shooter.';
 	if (!debug) {
 		gamefile += 'min.';
 	}

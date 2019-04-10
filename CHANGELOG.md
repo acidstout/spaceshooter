@@ -1,5 +1,9 @@
 ## Changes
 
+**Version 1.2.1**
+- added database fallback configuration
+- moved assets out of root folder
+
 **Version 1.2**
 - added Block Bad Queries (BBQ) script by Jeff Starr
 - added CSRF token to secure AJAX requests.

@@ -17,12 +17,18 @@
 function connectToDatabase() {
 	// Init $conn as empty array to avoid warnings in Eclipse. Gets filled in connect.php if that file exists.
 	$conn = array();
-	
+
 	if (!file_exists('connect.php')) {
-		return false;
+		if (!file_exists('connect.sample.php')) {
+			return false;
+		}
+		
+		// Fallback to sample database connection script. Used for development purposes.
+		include_once 'connect.sample.php';
+	} else {
+		include_once 'connect.php';
 	}
 	
-	include_once 'connect.php';
 	include_once 'classes/pdowrapper.php';
 	
 	if (isset($conn['host']) && !empty($conn['host'])
