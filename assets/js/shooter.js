@@ -7,7 +7,7 @@
  * @license GPL-3, http://www.gnu.org/licenses/
  */
 
-var version = '1.2.1';
+var version = '1.2.1a';
 
 
 /**
@@ -595,6 +595,18 @@ var App = function() {
 				
 				// Reset level divisor
 				divisor = 1000;
+
+				// Reset fire rate and damage
+				lastFireTime   = 0;
+				fireRate       = 4;
+				fireRateTemp   = 4;
+				fireDamage     = 200;
+				missileDamage  = 1000;
+
+				// Reset player's collectibles
+				playerShields   = 0;
+				playerMissiles  = 0;
+				playerTargeting = 0;
 				
 				// Reset asteroid delay
 				asteroidDelay = 1000;
