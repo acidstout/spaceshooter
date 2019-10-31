@@ -1,25 +1,13 @@
-/**
+/*!
+ * Space shooter
+ * A WADE game engine based space shooter with parallax starfield background.
  *
- *	Space shooter
- *	A WADE game engine based space shooter with parallax starfield background.
- *
- *	@author nrekow
- *
+ * @author nrekow
+ * @copyright (C) 2019 Nils Rekow
+ * @license GPL-3, http://www.gnu.org/licenses/
  */
 
-
-// TODO:
-/*
-	- normalize sounds
-
-*/
-
-// FIXME:
-/*
-	
-*/
-
-var version = '1.1.8';
+var version = '1.2.1a';
 
 
 /**
@@ -43,6 +31,16 @@ var App = function() {
 	var fireRateTemp   = 4;							// Temporary fire rate (e.g. overrides default fire rate if cheat-mode is enabled).
 	var fireDamage     = 200;						// How much damage is caused by one shot of the player's ship.
 	var missileDamage  = 1000;						// Damage caused by missile is much higher than normal fire damage.
+	var stats          = {							// Count total, hit and missed shots. Is used to calculate bonus, which is added on top of the achieved score.
+		missiles: {
+			fired: 0,
+			hit: 0
+		},
+		bullets: {
+			fired: -1,							// Correct unintended firing on game start.
+			hit: 0
+		}
+	};
 	
 	var enemyHealth    = [ 400, 600, 800, 1500, 5000 ];	// Enemy's health.
 	var enemyDelay     = 2000;						// How long to wait from spawning one enemy to spawning the next one.
@@ -348,7 +346,7 @@ var App = function() {
 		}
 
 		// Power-Ups
-		Object.keys(powerUps).forEach(key => {
+		Object.keys(powerUps).forEach(function(key) {
 			//console.log(powerUps[key].images);
 			for (i = 0; i < powerUps[key].images.length; i++) {
 				wade.loadImage(powerUps[key].images[i]);
@@ -594,6 +592,39 @@ var App = function() {
 				// Hide toggle buttons and cursor while playing.
 				gameBtnObj.style.display = 'none';
 				gameObj.style.cursor = 'none';
+				
+				// Reset level divisor
+				divisor = 1000;
+
+				// Reset fire rate and damage
+				lastFireTime   = 0;
+				fireRate       = 4;
+				fireRateTemp   = 4;
+				fireDamage     = 200;
+				missileDamage  = 1000;
+
+				// Reset player's collectibles
+				playerShields   = 0;
+				playerMissiles  = 0;
+				playerTargeting = 0;
+				
+				// Reset asteroid delay
+				asteroidDelay = 1000;
+				
+				// Reset enemy delay
+				enemyDelay = 1000;
+				
+				// Reset stats
+				stats = {
+					missiles: {
+						fired: 0,
+						hit: 0
+					},
+					bullets: {
+						fired: -1, // Correct unintended firing on game start.
+						hit: 0
+					}
+				};
 
 				wade.clearTimeout(nextAsteroid);
 				wade.removeSceneObject(clickToStart);
@@ -620,10 +651,13 @@ var App = function() {
 			var data = Base64.encode(json);
 
 			$.ajax({
-				url: 'php/backend.php',
+				url: 'assets/php/backend.php',
 				type: 'POST',
+				headers: {
+					'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
+				},
 				data: 'data=' + data,
-				success(result) {
+				success: function(result) {
 					if (result === null || result === '' || result === 'FAILED') {
 						//result = 0;
 						result = oldHighScore;
@@ -640,7 +674,7 @@ var App = function() {
 					oldHighScore = result;
 					clearInterval(ajaxInterval);
 				},
-				error(xhr, status, code) {
+				error: function(xhr, status, code) {
 					console.warn('getHighestScore(): AJAX call returned: ' + status + ': ' + code);
 				}
 			});
@@ -658,94 +692,106 @@ var App = function() {
 
 		var json          = JSON.stringify(payload);
 		var data          = Base64.encode(json);
-		var msg           = 'Highscore not loaded!';
+		var msg           = 'Couldn\'t get highscore :(';
 		
 		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 
 		$.ajax({
-			url: 'php/backend.php',
+			url: 'assets/php/backend.php',
 			type: 'POST',
+			headers: {
+				'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
+			},
 			data: 'data=' + data,
-			success(result) {
+			success: function(result) {
 				if (result !== 'FAILED') {
 					//console.log('Score: ' + currentScore);
-					
+
 					// Will contain our resulting HTML.
 					var highscoreHtml = '';
 					
 					// Prepare input field in order to reuse it.
 					var highscoreInputField = '<tr><td id="playerNameCell"><input type="text" class="highscore" id="playerName" maxlength="20" value="" placeholder="Enter your name"/></td><td>' + currentScore + '</td></tr>';
+					var highscoreObj = null;
 					
-					// Parse JSON formatted result and return an object.
-					var highscoreObj = JSON.parse(result);
+					try {
+						// Parse JSON formatted result and return an object.
+						highscoreObj = JSON.parse(result);
+					} catch (e) {
+						console.warn('Decoding AJAX response failed: ' + e.message);
+						$('#highscoreTable').html('<tr><td colspan="2">' + msg + '</td></tr>');
+					}
 					
-					// Get number of entries of object.
-					var highscoreObjCount = Object.keys(highscoreObj).length;
-					
-					// Flag to check if an input field has been added to the HTML code.
-					var hasInput = false;
-					
-					// Iterate over each entry of the object.
-					$.each(highscoreObj, function(i, item) {
-						// Add input field if player's score is higher than the current entry.
-						if (currentScore > 0 && currentScore >= item.score && !hasInput) {
+					if (highscoreObj !== null) {
+						// Get number of entries of object.
+						var highscoreObjCount = Object.keys(highscoreObj).length;
+						
+						// Flag to check if an input field has been added to the HTML code.
+						var hasInput = false;
+						
+						// Iterate over each entry of the object.
+						$.each(highscoreObj, function(i, item) {
+							// Add input field if player's score is higher than the current entry.
+							if (currentScore > 0 && currentScore >= item.score && !hasInput) {
+								highscoreHtml += highscoreInputField;
+								hasInput = true;
+							}
+							
+							// Limit number of rows to 10.
+							if (i < 9 || !hasInput) {
+								highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
+							}
+							//console.log(item.player + ' = ' + item.score);
+						});
+						
+						// If score is lower than the maximum score in the highscore table
+						// and if there are less than 10 entries in the highscore then allow
+						// the player to enter his name.
+						if (highscoreObjCount < 10 && !hasInput && currentScore > 0) {
 							highscoreHtml += highscoreInputField;
 							hasInput = true;
 						}
 						
-						// Limit number of rows to 10.
-						if (i < 9 || !hasInput) {
-							highscoreHtml += '<tr><td>' + item.player + '</td><td>' + item.score + '</td></tr>';
-						}
-						//console.log(item.player + ' = ' + item.score);
-					});
-					
-					// If score is lower than the maximum score in the highscore table
-					// and if there are less than 10 entries in the highscore then allow
-					// the player to enter his name.
-					if (highscoreObjCount < 10 && !hasInput && currentScore > 0) {
-						highscoreHtml += highscoreInputField;
-						hasInput = true;
-					}
-					
-					// Show highscore table.
-					$('#highscoreTable').html(highscoreHtml);
-
-					// Put cursor into input field if player is allowed to enter his name.
-					if (hasInput) {
-						$('#playerName').focus();
-						
-						$('#playerName').on('keypress', function(e) {
-							// Check for Enter key
-							if (e.keyCode === 13) {
-								e.preventDefault();
-								
-								var playerName = $('#playerName').val();
-								
-								if (playerName.length > 0) {
-									$(this).prop('disabled', true);
-		
-									// Save player's name and score
-									wade.app.saveHighscore(currentScore, playerName);
+						// Show highscore table.
+						$('#highscoreTable').html(highscoreHtml);
+	
+						// Put cursor into input field if player is allowed to enter his name.
+						if (hasInput) {
+							$('#playerName').focus();
+							
+							$('#playerName').on('keypress', function(e) {
+								// Check for Enter key
+								if (e.keyCode === 13) {
+									e.preventDefault();
 									
-									// Reset player's score after saving it.
-									score = 0;
+									var playerName = $('#playerName').val();
 									
-									$('#playerName').remove();
-									$('#playerNameCell').text(playerName);
+									if (playerName.length > 0) {
+										$(this).prop('disabled', true);
+			
+										// Save player's name and score
+										wade.app.saveHighscore(currentScore, playerName);
+										
+										// Reset player's score after saving it.
+										score = 0;
+										
+										$('#playerName').remove();
+										$('#playerNameCell').text(playerName);
+									}
+									
+									return false;
 								}
-								
-								return false;
-							}
-						});
+							});
+						}
 					}
 				} else {
 					console.warn('AJAX call by loadHighscore() returned: ' + result);
+					$('#highscoreTable').html('<tr><td colspan="2">' + msg + '</td></tr>');
 				}
 			},
-			error(xhr, status, code) {
+			error: function(xhr, status, code) {
 				console.warn('AJAX call by loadHighscore() returned: ' + status + ': ' + code);
-				$('.msg').html(msg);
+				$('#highscoreTable').html('<tr><td colspan="2">' + msg + '</td></tr>');
 			}
 		});
 	};
@@ -758,8 +804,6 @@ var App = function() {
 		currentScore  = (typeof(currentScore) !== 'undefined') ? currentScore : score;
 		currentPlayer = (typeof(currentPlayer) !== 'undefined') ? currentPlayer : 'Player';
 
-		var msg = 'Highscore not saved!';
-		
 		var payload = {
 			'action' : 'saveScore',
 			'player' : currentPlayer,
@@ -770,13 +814,14 @@ var App = function() {
 		var data = Base64.encode(json);
 			
 		$.ajax({
-			url: 'php/backend.php',
+			url: 'assets/php/backend.php',
 			type: 'POST',
+			headers: {
+				'Csrf-Token': $('meta[name="csrf-token"]').attr('content')
+			},
 			data: 'data=' + data,
-			success(result) {
-				if (result === 'OK') {
-					msg = 'Highscore saved!';
-				} else {
+			success: function(result) {
+				if (result !== 'OK') {
 					// Save score in LocalDB if database connection failed.
 					gameData = {
 						force2d: force2d,
@@ -786,12 +831,9 @@ var App = function() {
 						
 					wade.storeLocalObject(dataNames.data, gameData);
 				}
-				
-				$('.msg').html(msg);
 			},
-			error(xhr, status, code) {
+			error: function(xhr, status, code) {
 				console.warn('saveHighscore() returned: ' + status + ': ' + code);
-				$('.msg').html(msg);
 			}
 		});
 	};
@@ -884,16 +926,20 @@ var App = function() {
 				
 				// Decide whether to use missiles of normal bullets.
 				if (playerMissiles > 0) {
+					stats.missiles.fired++;
 					playerMissiles--;
 					bulletAudio = sounds.missile;
 					sprite = new Sprite(images.shipMissile);
 					missileShot = true;
 				} else {
+					stats.bullets.fired++;
 					bulletAudio = sounds.shoot;
 					sprite = new Sprite(images.shipBullet);
 					missileShot = false;
 				}
-				
+
+				//console.log(stats.toSource());
+
 				// Create sprite of selected bullet image.
 				var bullet = new SceneObject(sprite, 0, shipPosition.x, shipPosition.y - shipSize.y / 2);
 				wade.addSceneObject(bullet);
@@ -929,6 +975,11 @@ var App = function() {
 						for (var j = 0; j < colliders.length; j++) {
 
 							if (colliders[j].isEnemy) {
+								if (playerMissiles > 0) {
+									stats.missiles.hit++;
+								} else {
+									stats.bullets.hit++;
+								}
 								// Create explosion and play hit sound.
 								var position = colliders[j].getPosition();
 								wade.app.explosion(position, 1);
@@ -979,12 +1030,12 @@ var App = function() {
 
 			// console.log("Level: " + level + "\n Score / Divisor: " + Math.floor(score / divisor));
 			if (Math.floor(score / divisor) > 0) {
-				// console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
+				//console.log("(a) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
 
 				// Increase score required to fill up health (e.g. level 1 = 1.000, level 2 = 10.000, level 3 = 100.000, ...).
 				if (score >= divisor) {
-					divisor = Math.pow(10, level) * divisor;
 					level += 1;
+					divisor = Math.pow(10, level + 2); // * Math.floor(divisor / 10);
 				}
 
 				//console.log("(b) Score: " + score + "\nDivisor: " + divisor + "\nLevel: " + level);
@@ -1003,6 +1054,10 @@ var App = function() {
 				if (asteroidDelay > 400) {
 					asteroidDelay -= 100;
 				}
+				
+				if (level >= 5) {
+					asteroidDelay = 200;
+				}
 
 				// Increase firerate.
 				if (fireRate < 50) {
@@ -1019,7 +1074,13 @@ var App = function() {
 			healthCounter.getSprite().setText(playerHealth);
 			levelCounter.getSprite().setText(level);
 			missilesCounter.getSprite().setText(playerMissiles);
-			scoreCounter.getSprite().setText(Math.floor(score) + ', Left: ' + (divisor - Math.floor(score)));
+			
+			if (level >= 5) {
+				scoreCounter.getSprite().setText(Math.floor(score) + ' / OVERKILL!');
+			} else {
+				scoreCounter.getSprite().setText(Math.floor(score) + ' / ' + (divisor - Math.floor(score)));
+			}
+			
 			shieldsCounter.getSprite().setText(playerShields);
 			targetingCounter.getSprite().setText(playerTargeting);
 		}, 'fire');
@@ -1131,6 +1192,10 @@ var App = function() {
 					playerMissiles = 0;
 				}
 
+				if (playerTargeting < 0 || playerTargeting === 'NaN') {
+					playerTargeting = 0;
+				}
+
 				
 				// Update player's status (e.g. health, missiles, shields ...)
 				healthCounter.getSprite().setText(playerHealth);
@@ -1149,6 +1214,25 @@ var App = function() {
 				wade.setMainLoop(null, 'fire');
 				wade.setMainLoop(null, 'die');
 
+
+				// Calculate shoot/hit ratio
+				var bulletsRatio =  (stats.bullets.fired == 0) ? 0 : Math.round((stats.bullets.hit / stats.bullets.fired) * 100);
+				var missilesRatio = (stats.missiles.fired == 0) ? 0 : Math.round((stats.missiles.hit / stats.missiles.fired) * 100);
+
+				// Calculate bonus
+				var bonusscore = (bulletsRatio + missilesRatio) * 100;
+				
+				// Round up bonus to the next full thousand (e.g. 500 -> 1000, 1200 -> 2000, 1800 -> 2000, 2001 -> 3000 ...)
+				bonusscore = Math.max(Math.round(bonusscore / 1000) * 1000, 1000);
+
+				// Add bonus to score.
+				score += bonusscore;
+				
+				/*
+				console.log('Bullets hit ratio: ' + bulletsRatio + '%, ' + stats.bullets.hit + '/' + stats.bullets.fired);
+				console.log('Missiles hit ratio: ' + missilesRatio + '%, ' + stats.missiles.hit + '/' + stats.missiles.fired);
+				*/
+				
 				// Check high score
 				if (!sissy && score > oldHighScore) {
 					gameData = {
@@ -1545,6 +1629,12 @@ var App = function() {
 		
 		// Select random image of enemy as sprite.
 		var enemyId = wade.app.getRandomInt(0, maxEnemy);
+		
+		// From level 5 on spawn only huge motherships.
+		if (level >= 5) {
+			enemyId = 4;
+		}
+		
 		sprite = new Sprite(images.enemies[enemyId]);
 
 		// Calculate start and end coordinates.
@@ -1625,6 +1715,10 @@ var App = function() {
 		if (playerTargeting > 0) {
 			wade.setTimeout(function() {
 				playerTargeting--;
+				// Prevent "playerTargeting" from having negative value.
+				if (playerTargeting < 0 || playerTargeting === 'NaN') {
+					playerTargeting = 0;
+				}
 				targetingCounter.getSprite().setText(playerTargeting);
 			}, 1000);
 		} else {
@@ -1715,7 +1809,7 @@ var App = function() {
 		
 		// State = "running" or "suspended"
 		if (context.state === 'suspended') {
-			context.resume().then(() => {
+			context.resume().then(function() {
 				console.log('Audio context resumed.');
 			});
 		}

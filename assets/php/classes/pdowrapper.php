@@ -38,6 +38,8 @@
  *
  * 
  * @author nrekow
+ * @copyright (C) 2018 Nils Rekow
+ * @license GPL-3, http://www.gnu.org/licenses/
  * @version 1.0
  *
  */

@@ -1,3 +1,14 @@
+/*!
+ * Space shooter
+ * A WADE game engine based space shooter with parallax starfield background.
+ *
+ * @author nrekow
+ * @copyright (C) 2019 Nils Rekow
+ * @license GPL-3, http://www.gnu.org/licenses/
+ */
+
+
+
 // Disable debug-mode.
 var debug = true;
 
@@ -23,7 +34,7 @@ function log(param) {
 	if (debug) {
 		if (typeof(param) !== 'undefined') {
 			$.ajax({
-				url: 'php/backend.php',
+				url: 'assets/php/backend.php',
 				type: 'POST',
 				data: 'log=' + param,
 				success() {
@@ -104,7 +115,7 @@ function getBrowserVersion(browserEngineRegEx, parseVersion) {
 $(function() {
 	'use strict';
 	// Choose game file.
-	var gamefile = 'js/shooter.';
+	var gamefile = 'assets/js/shooter.';
 	if (!debug) {
 		gamefile += 'min.';
 	}
