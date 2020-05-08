@@ -199,7 +199,7 @@ function saveScore($db, $player, $score) {
 	// this case should never happen, but we need to take care of it anyway.
 	//
 	if (extension_loaded('gmp')) {
-		if (gmp_cpm(gmp_abs($score), PHP_INT_MAX) === 1) {
+		if (gmp_cmp(gmp_abs($score), PHP_INT_MAX) === 1) {
 			$score = PHP_INT_MAX;
 		}
 	}
