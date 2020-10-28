@@ -32,7 +32,7 @@ You can also run the game without a database. In such case the highscore table w
 Play the latest stable version of the game on https://rekow.ch/overkill/ for free.
 
 ## Thanks
-This game makes use of the following frameworks, plugins, resources and technologie. In alphabetical order.
+This game makes use of the following frameworks, plugins, resources and technology. In alphabetical order.
 - [FontAwesome](https://fontawesome.com)
 - [Jean-Christophe Nicolas (vonKristoff)](http://bite-software.co.uk/starscroll/)
 - [Jeff Starr](https://perishablepress.com/block-bad-queries/)
