@@ -4,7 +4,7 @@
 - updated PDO Wrapper class
 - updated link to demo
 - removed backticks from SQL schema
-- reactivated Codacy repository
+- removed Codacy
 
 **Version 1.2.1**
 - added database fallback configuration
