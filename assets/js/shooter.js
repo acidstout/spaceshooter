@@ -1216,8 +1216,8 @@ var App = function() {
 
 
 				// Calculate shoot/hit ratio
-				var bulletsRatio =  (stats.bullets.fired == 0) ? 0 : Math.round((stats.bullets.hit / stats.bullets.fired) * 100);
-				var missilesRatio = (stats.missiles.fired == 0) ? 0 : Math.round((stats.missiles.hit / stats.missiles.fired) * 100);
+				var bulletsRatio =  (stats.bullets.fired === 0) ? 0 : Math.round((stats.bullets.hit / stats.bullets.fired) * 100);
+				var missilesRatio = (stats.missiles.fired === 0) ? 0 : Math.round((stats.missiles.hit / stats.missiles.fired) * 100);
 
 				// Calculate bonus
 				var bonusscore = (bulletsRatio + missilesRatio) * 100;
