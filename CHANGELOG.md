@@ -1,4 +1,10 @@
 ## Changes
+**Version 1.2.1a**
+- updated to WADE 4.1.1
+- updated PDO Wrapper class
+- updated link to demo
+- removed backticks from SQL schema
+- reactivated Codacy repository
 
 **Version 1.2.1**
 - added database fallback configuration

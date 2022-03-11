@@ -2,7 +2,7 @@
 
 /**
  * Simple PDO wrapper class which is compatible with basic ADOdb features.
- * 
+ *
  * The goal was to migrate web-applications from ADOdb to plain PDO,
  * when there's no need to have a fully featured database framework.
  * Especially if just a few basic features (CRUD) are used. In order
@@ -10,15 +10,15 @@
  * you connect to the database (e.g. replace your ADOdb database
  * connection object with the Wrapper object) and it should work out
  * of the box.
- * 
+ *
  * Some features like setting ADOdb's fetch-mode are not implemented,
- * and for now it's not planned to change that. 
- * 
+ * and for now it's not planned to change that.
+ *
  * Usage:
- * 
+ *
  * 		Establish database connection:
- *			$db = new Database\Wrapper($host, $database, $username, $password);
- *		
+ *			$db = new PDO\Wrapper($host, $database, $username, $password);
+ *
  *		Fetch data from database:
  *			$sql = "SELECT * FROM users WHERE is_active = 1 ORDER BY surname ASC LIMIT 10;";
  *			$users = $db->getAll();
@@ -36,11 +36,11 @@
  *			$sql = "UPDATE users SET is_active = 0 WHERE forename = 'Bob';";
  *			$db->execute($sql);
  *
- * 
+ *
  * @author nrekow
  * @copyright (C) 2018 Nils Rekow
  * @license GPL-3, http://www.gnu.org/licenses/
- * @version 1.0
+ * @version 1.0.2a
  *
  */
 
@@ -57,7 +57,7 @@ interface WrapperFunctions {
 	public function getOne($query = null, $data = null);
 	public function getAll($query = null, $data = null);
 	public function getLastId();
-	public function query($query, $data = null);
+	//public function query($query, $data = null);
 }
 
 
@@ -71,7 +71,7 @@ class Wrapper extends PDO implements WrapperFunctions {
 	
 	/**
 	 * Creates a wrapper object around the PDO class to provide basic ADOdb compatibility.
-	 * 
+	 *
 	 * @param string $host
 	 * @param string $database
 	 * @param string $user
@@ -79,7 +79,7 @@ class Wrapper extends PDO implements WrapperFunctions {
 	 * @param string $driver
 	 * @param string $charset
 	 * @param array $opt
-	 * 
+	 *
 	 * @return object|boolean
 	 */
 	public function __construct($host, $database, $user, $pass, $driver = 'mysql:', $charset = 'utf8mb4', $opt = [
@@ -103,7 +103,7 @@ class Wrapper extends PDO implements WrapperFunctions {
 	
 	/**
 	 * Returns last database error
-	 * 
+	 *
 	 * @return string
 	 */
 	public function ErrorMsg() {
@@ -113,6 +113,11 @@ class Wrapper extends PDO implements WrapperFunctions {
 			if (empty($this->database_error) && $this->stmt !== false) {
 				$this->database_error = $this->stmt->errorInfo();
 			}
+			
+			// MySQL/MariaDB: if error code is 00000, then there's no error.
+			if (isset($this->database_error[0]) && $this->database_error[0] == '00000') {
+				$this->database_error = null;
+			}
 		}
 		
 		return $this->database_error;
@@ -121,13 +126,15 @@ class Wrapper extends PDO implements WrapperFunctions {
 	
 	/**
 	 * Executes statement against database, returns last id on INSERT and row count on UPDATE or DELETE.
-	 * 
+	 *
+	 * TODO: Allow execution of multiple statements in one query.
+	 *
 	 * @param string $query
 	 * @param array $data
 	 * @return string|boolean
 	 */
 	public function execute($query, $data = null) {
-		if (is_null($this->connection)) {
+		if ( $this->connection === null ) {
 			$this->database_error = 'No database connection.';
 			return false;
 		}
@@ -158,44 +165,50 @@ class Wrapper extends PDO implements WrapperFunctions {
 	
 	/**
 	 * Updates data in database.
-	 * 
+	 *
 	 * @param string $query
 	 * @param array $data
 	 * @return number
 	 */
 	public function update($query, $data) {
-		$stmt = $this->query($query, $data);
+		$stmt = $this->_query($query, $data);
 		return $stmt->rowCount();
 	}
 	
 	
 	/**
 	 * Deletes data from database.
-	 * 
+	 *
 	 * @param string $query
 	 * @param array $data
 	 * @return number
 	 */
 	public function delete($query, $data) {
-		$stmt = $this->query($query, $data);
+		$stmt = $this->_query($query, $data);
 		return $stmt->rowCount();
 	}
 	
 	
 	/**
 	 * Fetches single value from database table.
-	 * 
+	 *
 	 * @param string
 	 * @param array
 	 * @return string|integer
 	 */
 	public function getOne($query = null, $data = null) {
 		if (!is_null($query) && $query != $this->query) {
-			$this->stmt = $this->query($query, $data);
+			$this->stmt = $this->_query($query, $data);
 		}
 		
 		$obj = $this->stmt->fetchObject();
-		if (is_array($obj) || is_object($obj)) {
+		if (is_object($obj)) {
+			// Convert object to array and preserve nesting.
+			return json_decode(json_encode($obj), true);
+		}
+		
+		// TODO: Needs testing.
+		if (is_array($obj)) {
 			return reset($obj);
 		}
 		
@@ -205,14 +218,14 @@ class Wrapper extends PDO implements WrapperFunctions {
 	
 	/**
 	 * Fetches all data as specified from database.
-	 * 
+	 *
 	 * @param string $query
 	 * @param array $data
 	 * @return array
 	 */
 	public function getAll($query = null, $data = null) {
-		if (!is_null($query) && $query != $this->query) {
-			$this->stmt = $this->query($query, $data);
+		if ( $query !== null && $query != $this->query ) {
+			$this->stmt = $this->_query($query, $data);
 		}
 		
 		return ($this->stmt->fetchAll());
@@ -241,12 +254,12 @@ class Wrapper extends PDO implements WrapperFunctions {
 	
 	/**
 	 * Executes query against database.
-	 * 
+	 *
 	 * @param string $query
 	 * @param mixed $data
 	 * @return PDOStatement|boolean
 	 */
-	public function query($query, $data = null) {
+	private function _query($query, $data = null) {
 		if (!is_null($this->connection)) {
 			$this->query = $query;
 			$this->stmt = $this->connection->prepare($query);

@@ -75,7 +75,7 @@ function truncate($str, $length) {
  */
 function log_msg($msg, $result = null) {
 	error_log(print_r($msg, true), 0);
-	if (!is_null($result)) {
+	if ( $result !== null ) {
 		echo $result;
 	}
 }
@@ -92,8 +92,9 @@ function getHighestScore($db) {
 			FROM highscores
 			ORDER BY score DESC
 			LIMIT 1;";
-	if ($db->query($sql)) {
-		return $db->getOne();
+	$result = $db->getOne($sql);
+	if ($result !== null) {
+		return $result['score'];
 	}
 	
 	$msg = $db->ErrorMsg() . "\n" . $sql;
@@ -115,8 +116,8 @@ function loadScore($db) {
 			ORDER BY score DESC, player ASC
 			LIMIT 10;";
 	
-	if ($db->query($sql)) {
-		$results = $db->getAll();
+	$results = $db->getAll($sql);
+	if ($results !== null) {
 		$tmp = array();
 
 		// Virtually fill empty positions. 
@@ -167,9 +168,8 @@ function isHighscore($db, $score) {
 			ORDER BY score ASC
 			LIMIT 1;";
 	
-	if ($db->query($sql)) {
-		$results = $db->getAll();
-		
+	$results = $db->getAll($sql);
+	if ($results !== null) {
 		if (isset($results[0]) && isset($results[0]['score']) && isset($results[0]['found_rows']) && $score > $results[0]['score'] || $results[0]['found_rows'] < 10) {
 			return true;
 		}
