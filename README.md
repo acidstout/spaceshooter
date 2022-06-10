@@ -27,7 +27,7 @@ The game will run flawlessly in any modern browser. Even older browsers should w
 You can also run the game without a database. In such case the highscore table won't work and the highest score is stored in the local storage of your browser. I don't plan to use the local storage any further or to add support for the indexed database. 
 
 ## Demo
-Play the latest stable version of the game on https://rekow.ch/overkill/ for free.
+Play the latest stable version of the game on https://overkill.rekow.ch for free.
 
 ## Thanks
 This game makes use of the following frameworks, plugins, resources and technology. In alphabetical order.
